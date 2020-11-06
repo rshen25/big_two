@@ -1,2 +1,17 @@
-node_modules/
+# System and IDE files
+Thumbs.db
+.DS_Store
+.idea
+*.suo
+*.sublime-project
+*.sublime-workspace
+
+# Visual Studio files
 .vs/
+
+# Vendors
+node_modules/
+
+# Build
+dist/
+/npm-debug.log
