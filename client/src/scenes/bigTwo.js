@@ -1,6 +1,7 @@
 /**
  * The main scene used for the game of Big Two
  */
+import io from 'socket.io-client';
 import Card from '../objects/card.js';
 import Hand from '../objects/hand.js';
 
@@ -13,10 +14,28 @@ export default class BigTwo extends Phaser.Scene {
 
     preload() {
         // Pre-load in the playing cards into the client
-        this.load.atlasXML('playingCards', 'src/assets/sprites/playingCards.png', 'src/assets/sprites/playingCards.xml');
+        this.load.atlasXML('playingCards',
+            'src/assets/sprites/playingCards.png',
+            'src/assets/sprites/playingCards.xml');
+
+        // Pre-load the card backs into the client
+        this.load.atlasXML('cardBacks',
+            'src/assets/sprites/playingCardBacks.png',
+            'src/assets/sprites/playingCardBacks.xml')
     }
 
     create() {
+        this.isPlayerA = false;
+        this.opponentCards = [];
+
+        // Temporary Server code
+        this.socket = io('http://localhost:3000');
+
+        this.socket.on('connect', onConnect);
+
+        this.socket.on('isPlayerA', function () {
+            this.isPlayerA = true;
+        })
 
         // Create a deal cards button to start dealing cards to the players
         this.dealText = this.add.text(75, 350, ['DEAL CARDS'])
@@ -37,7 +56,28 @@ export default class BigTwo extends Phaser.Scene {
         this.input.setDraggable(this.card1);
         this.input.setDraggable(this.card2);
 
+        // TODO: Needs Refactoring
         this.input.on('drag', this.onDragCard);
+
+        this.input.on('dragstart', function (pointer, gameObject) {
+            gameObject.setTint(0xff69b4);
+            this.scene.children.bringToTop(gameObject);
+        })
+
+        this.input.on('dragend', function (pointer, gameObject, dropped) {
+            gameObject.setTint();
+            if (!dropped) {
+                gameObject.x = gameObject.input.dragStartX;
+                gameObject.y = gameObject.input.dragStartY;
+            }
+        })
+
+        this.input.on('drop', function (pointer, gameObject, handZone) {
+            handZone.data.values.cards++;
+            gameObject.x = (handZone.x - 350) + (handZone.data.values.cards * 50);
+            gameObject.y = handZone.y;
+            gameObject.disableInteractive();
+        })
 
         this.hand = new Hand(this);
         this.handZone = this.hand.renderHand();
@@ -64,4 +104,7 @@ export default class BigTwo extends Phaser.Scene {
         gameObject.y = dragY;
     }
 
+    onConnect() {
+        console.log('Connected!');
+    }
 }

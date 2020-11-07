@@ -2,16 +2,19 @@
  * Game Manager singleton that manages the game logic and assets
  */
 
+import Card from '../objects/card.js';
+
 export default class GameManager {
     static instance = null;
 
     players = {};
 
-    constructor() {
+    constructor(scene) {
         if (!this.instance) {
             this.instance = this;
             //this.deck = new Deck();
         }
+        this.scene = scene;
         return this.instance;
     }
 
@@ -42,7 +45,11 @@ export default class GameManager {
      * Deals the cards to all the players in the game
      */
     deal() {
-
+        for (let i = 0; i < 5; i++) {
+            let playerCard = new Card(this.scene);
+            playerCard.render(475 + (i * 30), 500, 'playingCards', 'cardHearts2.png');
+            playerCard.render(475 + (i * 30), 125, 'playingCards', 'cardJoker.png'); 
+        }
     }
 
     /**
