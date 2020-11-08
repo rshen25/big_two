@@ -2,8 +2,8 @@
  * The main scene used for the game of Big Two
  */
 import io from 'socket.io-client';
-import Card from '../objects/card.js';
-import Hand from '../objects/hand.js';
+import Card from '../objects/clientCard.js';
+import Hand from '../objects/clientHand.js';
 
 export default class BigTwo extends Phaser.Scene {
     constructor() {
@@ -31,7 +31,7 @@ export default class BigTwo extends Phaser.Scene {
         // Temporary Server code
         this.socket = io('http://localhost:3000');
 
-        this.socket.on('connect', onConnect);
+        this.socket.on('connect', this.onConnect);
 
         this.socket.on('isPlayerA', function () {
             this.isPlayerA = true;
@@ -94,8 +94,8 @@ export default class BigTwo extends Phaser.Scene {
 
         let frames = playingCardTexture.getFrameNames();
         for (let i = 0; i < 5; i++) {
-            let playerCard = new Card(11, 'Clubs', frames[6], this.scene);
-            playerCard.render(475 + (i * 50), 400, 'playingCards', frames[6]);
+            let playerCard = new Card(11, 'Clubs', 1, 'playingCards', frames[6], this.scene);
+            playerCard.render(475 + (i * 50), 400);
         }
     }
 

@@ -2,7 +2,7 @@
  * Game Manager singleton that manages the game logic and assets
  */
 
-import Card from '../objects/card.js';
+import Card from './card.js';
 
 export default class GameManager {
     static instance = null;

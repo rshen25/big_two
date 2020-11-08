@@ -1,11 +1,16 @@
 /**
- * A Hand object is a container to hold the playing cards and to restrict them within
+ * A Hand object for the client is a container to hold the playing cards and to restrict them within
  * a specified zone. Each player should have one hand total.
  */
 
-export default class Hand {
-    constructor(scene) {
+import Hand from '../../../src/objects/hand.js';
+
+export default class ClientHand extends Hand {
+    constructor(scene, x, y) {
+        super();
         this.scene = scene;
+        this.x = x;
+        this.y = y;
     }
 
     renderHand() {
