@@ -3,10 +3,9 @@
  */
 
 //import Hand from './hand.js';
+let Hand = require('./hand.js');
 
 module.exports = class Player {
-    Hand = require('./hand.js');
-
     constructor(id, number) {
         this.isRoomOwner = false;
         this.id = id;

@@ -10,8 +10,7 @@ const io = require('socket.io')(http, {
 });
 const gameManager = require('./server/objects/gameManager.js');
 
-const GameManager = new gameManager();
-
+let GameManager = new gameManager();
 
 io.on('connection', onConnect);
 
@@ -22,7 +21,7 @@ http.listen(3000, function () {
 
 function onConnect(socket) {
     console.log('A user connected: ' + socket.id);
-    //gameManager.connectPlayer(socket.id);
+    GameManager.connectPlayer(socket.id);
 
     // TO DO: Dealing logic
     socket.on('dealCards', dealCards);
@@ -36,13 +35,13 @@ function onConnect(socket) {
 }
 
 function onDisconnect(socket) {
-    gameManager.disconnectPlayer(socket.id);
-
-    // Remove the player from the list of connected players when they disconnect
-    //players = players.filter(player => player !== socket.id);
+    GameManager.disconnectPlayer(socket.id);
 }
 
 function dealCards() {
-    // hands = gameManager.dealCards();
+    hands = GameManager.dealCards();
+
+    // Send the hands to each player
+
     console.log('Server: Cards dealt');
 }

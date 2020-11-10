@@ -35,9 +35,9 @@ module.exports = class GameManager {
      * @param {any} id - The player id
      */
     connectPlayer(id) {
-        players[id] = new Player(id, Object.keys(players).length + 1);
+        this.players[id] = new Player(id, Object.keys(this.players).length + 1);
 
-        console.log(`A user connected. Number of Players: ${players.length}`);
+        console.log(`A user connected. Number of Players: ${Object.keys(this.players).length}`);
     }
 
     /**
@@ -48,7 +48,7 @@ module.exports = class GameManager {
         console.log('User disconnected.');
 
         // Remove the player from the players object
-        // delete players[id];
+        delete this.players[id];
     }
 
     /**
