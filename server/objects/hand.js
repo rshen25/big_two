@@ -3,7 +3,7 @@
  * a specified zone. Each player should have one hand total.
  */
 
-export default class Hand {
+module.exports = class Hand {
     constructor() {
         this.hand = [];
     }

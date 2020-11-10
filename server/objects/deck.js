@@ -2,9 +2,10 @@
  * A Deck object to hold the playing cards
  */
 
-import Card from './card.js';
+// import Card from './card.js';
+Card = require('./card.js');
 
-export default class Deck {
+module.exports = class Deck {
     deck = [];
 
     constructor(suitRankings) {
@@ -17,8 +18,8 @@ export default class Deck {
      * Creates a new Card object and adds it to the deck
      */
     initializeDeck() {
-        let suits = Object.keys();
-        for (let i = 0; i < suitRankings.length; i++) {
+        let suits = Object.keys(this.suitRankings);
+        for (let i = 0; i < this.suitRankings.length; i++) {
             let suit = suits[i];
             for (let j = 1; j <= 13; j++) {
                 this.deck.push(new Card(j, suit, i));

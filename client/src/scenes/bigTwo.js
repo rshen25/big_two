@@ -2,8 +2,8 @@
  * The main scene used for the game of Big Two
  */
 import io from 'socket.io-client';
-import Card from '../objects/clientCard.js';
-import Hand from '../objects/clientHand.js';
+import Card from '../objects/card.js';
+import Hand from '../objects/hand.js';
 
 export default class BigTwo extends Phaser.Scene {
     constructor() {
@@ -28,21 +28,32 @@ export default class BigTwo extends Phaser.Scene {
         this.isPlayerA = false;
         this.opponentCards = [];
 
-        // Temporary Server code
-        this.socket = io('http://localhost:3000');
+        this.hand = new Hand(this);
+        this.handZone = this.hand.renderHand();
+        this.outline = this.hand.renderOutline(this.handZone);
 
-        this.socket.on('connect', this.onConnect);
+        // Temporary Server code
+        this.socket = io("http://localhost:3000");
+
+        this.socket.on('connect', function () {
+            console.log('Connected!');
+        });
 
         this.socket.on('isPlayerA', function () {
             this.isPlayerA = true;
         })
+
+        let self = this;
 
         // Create a deal cards button to start dealing cards to the players
         this.dealText = this.add.text(75, 350, ['DEAL CARDS'])
             .setFontSize(18).setFontFamily('Trebuchet MS')
             .setColor('#00ffff').setInteractive();
 
-        this.dealText.on('pointerdown', this.dealCards);
+        //this.dealText.on('pointerdown', this.dealCards);
+        this.dealText.on('pointerdown', function () {
+            self.socket.emit('dealCards');
+        });
 
         // Test cards
         let playingCardTexture = this.textures.get('playingCards');
@@ -79,17 +90,16 @@ export default class BigTwo extends Phaser.Scene {
             gameObject.disableInteractive();
         })
 
-        this.hand = new Hand(this);
-        this.handZone = this.hand.renderHand();
-        this.outline = this.hand.renderOutline(this.handZone);
     }
 
     update() {
 
     }
 
-    dealCards() {
-        console.log("Cards Dealt");
+    dealCards(socket) {
+        socket.emit('dealCards');
+        console.log("Client: Cards Dealt");
+        /*
         let playingCardTexture = this.scene.textures.get('playingCards');
 
         let frames = playingCardTexture.getFrameNames();
@@ -97,6 +107,7 @@ export default class BigTwo extends Phaser.Scene {
             let playerCard = new Card(11, 'Clubs', 1, 'playingCards', frames[6], this.scene);
             playerCard.render(475 + (i * 50), 400);
         }
+        */
     }
 
     onDragCard(pointer, gameObject, dragX, dragY) {

@@ -2,14 +2,16 @@
  * A Player object that represents a single player in the game
  */
 
-import Hand from './hand.js';
+//import Hand from './hand.js';
 
-export default class Player {
+module.exports = class Player {
+    Hand = require('./hand.js');
 
-    constructor(id) {
+    constructor(id, number) {
         this.isRoomOwner = false;
         this.id = id;
         this.hand = new Hand();
+        this.playerNumber = number;
     }
 
     playCard() {

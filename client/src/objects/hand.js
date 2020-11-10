@@ -3,11 +3,8 @@
  * a specified zone. Each player should have one hand total.
  */
 
-import Hand from '../../../src/objects/hand.js';
-
-export default class ClientHand extends Hand {
+export default class Hand {
     constructor(scene, x, y) {
-        super();
         this.scene = scene;
         this.x = x;
         this.y = y;
