@@ -10,6 +10,10 @@ export default class BigTwo extends Phaser.Scene {
         super({
             key: 'BigTwo'
         });
+        this.isHost = false;
+        this.opponentCards = [];
+        this.otherPlayers = 0;
+        this.hand = new Hand();
     }
 
     preload() {
@@ -25,25 +29,74 @@ export default class BigTwo extends Phaser.Scene {
     }
 
     create() {
-        this.isPlayerA = false;
-        this.opponentCards = [];
+        let self = this;
 
-        this.hand = new Hand(this);
-        this.handZone = this.hand.renderHand();
-        this.outline = this.hand.renderOutline(this.handZone);
+        // Create player hand
+        this.hand.zone = this.createHand(this, window.innerWidth / 2, window.innerHeight - 100,
+            window.innerWidth - 600, 200);
+
+        // Create zones for other player hands
+        // west player
+        let westHand = this.createHand(this, 100, window.innerHeight / 2,
+            200, window.innerHeight - 200);
+
+        // north player
+        let northHand = this.createHand(this, window.innerWidth / 2, 100,
+            window.innerWidth - 600, 200);
+
+        // east player
+        let eastHand = this.createHand(this, window.innerWidth - 100, window.innerHeight / 2,
+            200, window.innerHeight - 200);
 
         // Temporary Server code
         this.socket = io("http://localhost:3000");
 
-        this.socket.on('connect', function () {
-            console.log('Connected!');
+        this.socket.on('connect', this.onConnect);
+
+        this.socket.on('otherPlayerJoined', function (id) {
+            this.otherPlayers += 1;
+            console.log(`User ${id} joined.`);
         });
 
-        this.socket.on('isPlayerA', function () {
-            this.isPlayerA = true;
-        })
+        this.socket.on('otherPlayerDisconnect', function (id) {
+            this.otherPlayers -= 1;
+            console.log(`User ${id} left.`);
+        });
 
-        let self = this;
+        /**
+         * Get the player's hand from the server and add the cards to the hand and 
+         * draw them onto the scene 
+         */
+        this.socket.on('handDealt', function (data) {
+            console.log(self.hand);
+            console.log(data);
+            let spriteName;
+            for (let i = 0; i < data.length; i++) {
+                switch (data[i].value) {
+                    case 1:
+                        spriteName = `card${data[i].suit}A.png`;
+                        break;
+                    case 11:
+                        spriteName = `card${data[i].suit}J.png`;
+                        break;
+                    case 12:
+                        spriteName = `card${data[i].suit}Q.png`;
+                        break;
+                    case 13:
+                        spriteName = `card${data[i].suit}K.png`;
+                        break;
+                    default:
+                        spriteName = `card${data[i].suit}${data[i].value}.png`;
+                        break;
+                }
+                let card = new Card(data[i].value, data[i].suit, data[i].suitValue,
+                    'playingCards', spriteName, self);
+                card.render((self.hand.zone.x - 350) + (self.hand.zone.data.values.cards * 20),
+                    self.hand.zone.y);
+                self.hand.zone.data.values.cards++;
+                self.hand.add(card);
+            }
+        });
 
         // Create a deal cards button to start dealing cards to the players
         this.dealText = this.add.text(75, 350, ['DEAL CARDS'])
@@ -85,11 +138,12 @@ export default class BigTwo extends Phaser.Scene {
 
         this.input.on('drop', function (pointer, gameObject, handZone) {
             handZone.data.values.cards++;
-            gameObject.x = (handZone.x - 350) + (handZone.data.values.cards * 50);
+            gameObject.x = (handZone.x - 350) + (handZone.data.values.cards * 25);
             gameObject.y = handZone.y;
             gameObject.disableInteractive();
         })
 
+        console.log(this.hand);
     }
 
     update() {
@@ -99,23 +153,32 @@ export default class BigTwo extends Phaser.Scene {
     dealCards(socket) {
         socket.emit('dealCards');
         console.log("Client: Cards Dealt");
-        /*
-        let playingCardTexture = this.scene.textures.get('playingCards');
-
-        let frames = playingCardTexture.getFrameNames();
-        for (let i = 0; i < 5; i++) {
-            let playerCard = new Card(11, 'Clubs', 1, 'playingCards', frames[6], this.scene);
-            playerCard.render(475 + (i * 50), 400);
-        }
-        */
     }
 
     onDragCard(pointer, gameObject, dragX, dragY) {
         gameObject.x = dragX;
         gameObject.y = dragY;
+        console.log(this.hand);
     }
 
     onConnect() {
         console.log('Connected!');
+    }
+
+    createHand(scene, x, y, width, height) {
+        let zone = scene.add.zone(x,
+            y,
+            width,
+            height).setRectangleDropZone(width, height);
+        zone.setData({ cards: 0 });
+        scene.add.graphics()
+            .lineStyle(4, 0xffffff)
+            .strokeRect(zone.x - zone.input.hitArea.width / 2,
+                zone.y - zone.input.hitArea.height / 2,
+                zone.input.hitArea.width,
+                zone.input.hitArea.height
+            );
+
+        return zone;
     }
 }

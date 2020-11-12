@@ -2,8 +2,6 @@
  * Game Manager singleton that manages the game logic and assets
  */
 'use strict'
-/*import Deck from './deck.js';
-import Player from './player.js';*/
 
 let Player = require('./player.js');
 let Deck = require('./deck.js');
@@ -13,6 +11,7 @@ module.exports = class GameManager {
     static instance = null;
 
     players = {};
+    numberOfPlayers = 0;
 
     suitRanking = {
         'Spades': 0,
@@ -24,9 +23,10 @@ module.exports = class GameManager {
     constructor() {
         if (!this.instance) {
             this.instance = this;
-            //this.deck = new Deck();
+            this.deck = new Deck(this.suitRanking);
         }
         this.deck = new Deck(this.suitRanking);
+        this.previouslyPlayed = null;
         return this.instance;
     }
 
@@ -35,9 +35,10 @@ module.exports = class GameManager {
      * @param {any} id - The player id
      */
     connectPlayer(id) {
-        this.players[id] = new Player(id, Object.keys(this.players).length + 1);
+        this.numberOfPlayers += 1;
+        this.players[id] = new Player(id, this.numberOfPlayers);
 
-        console.log(`A user connected. Number of Players: ${Object.keys(this.players).length}`);
+        console.log(`A user connected. Number of Players: ${this.numberOfPlayers}`);
     }
 
     /**
@@ -48,20 +49,23 @@ module.exports = class GameManager {
         console.log('User disconnected.');
 
         // Remove the player from the players object
-        delete this.players[id];
+        delete this.players.id;
+
+        this.numberOfPlayers -= 1;
     }
 
     /**
      * Deals the cards to all the players in the game
      */
     dealCards() {
+        this.resetDeck();
         let playersInRoom = [];
-        for (player in players) {
-            playersInRoom.push(player);
+        for (const property in this.players) {
+            playersInRoom.push(this.players[property]);
         }
-        this.deck.dealCards(playersInRoom);
+        this.deck.deal(playersInRoom);
 
-        return players;
+        return this.players;
     }
 
     /**
@@ -75,5 +79,6 @@ module.exports = class GameManager {
      * Resets the deck of cards by taking all the cards from the players
      */
     resetDeck() {
+        this.deck.reset();
     }
 }

@@ -4,14 +4,13 @@
  */
 
 export default class Hand {
-    constructor(scene, x, y) {
-        this.scene = scene;
-        this.x = x;
-        this.y = y;
+    constructor() {
+        this.hand = [];
+        this.zone = null;
     }
 
-    renderHand() {
-        let hand = this.scene.add.zone(700, 375, 900, 250).setRectangleDropZone(900, 250);
+    renderHand(scene, x, y) {
+        let hand = scene.add.zone(700, 375, 900, 250).setRectangleDropZone(900, 250);
         hand.setData({ cards: 0 });
         return hand;
     }
@@ -24,5 +23,13 @@ export default class Hand {
             hand.input.hitArea.width,
             hand.input.hitArea.height
         )
+    }
+
+    /**
+     * Adds a card to the hand
+     * @param {any} card - A Card object
+     */
+    add(card) {
+        this.hand.push(card);
     }
 }

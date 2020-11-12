@@ -14,7 +14,7 @@ export default class Card{
 
     render (x, y)  {
         this.card = this.scene.add.image(x, y, this.key, this.sprite)
-            .setScale(0.75, 0.75)
+            .setScale(0.7, 0.7)
             .setInteractive();
         this.scene.input.setDraggable(this.card);
         return this.card;

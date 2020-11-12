@@ -36,12 +36,16 @@ function onConnect(socket) {
 
 function onDisconnect(socket) {
     GameManager.disconnectPlayer(socket.id);
+    io.emit('otherPlayerDisconnect', socket.id);
 }
 
 function dealCards() {
     hands = GameManager.dealCards();
 
     // Send the hands to each player
+    for (const id in GameManager.players) {
+        io.to(id).emit('handDealt', GameManager.players[id].hand.hand);
+    }
 
     console.log('Server: Cards dealt');
 }
