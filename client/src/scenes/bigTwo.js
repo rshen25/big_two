@@ -11,9 +11,8 @@ export default class BigTwo extends Phaser.Scene {
             key: 'BigTwo'
         });
         this.isHost = false;
-        this.opponentCards = [];
+        this.playerNumber = -1;
         this.otherPlayers = 0;
-        this.hand = new Hand();
     }
 
     preload() {
@@ -25,28 +24,32 @@ export default class BigTwo extends Phaser.Scene {
         // Pre-load the card backs into the client
         this.load.atlasXML('cardBacks',
             'src/assets/sprites/playingCardBacks.png',
-            'src/assets/sprites/playingCardBacks.xml')
+            'src/assets/sprites/playingCardBacks.xml');
     }
 
     create() {
         let self = this;
+        let width = this.scale.width;
+        let height = this.scale.height;
 
-        // Create player hand
-        this.hand.zone = this.createHand(this, window.innerWidth / 2, window.innerHeight - 100,
-            window.innerWidth - 600, 200);
+        // Create the hands
+        this.hand = new Hand(width / 2, height - 50, width * 0.75, 100);
+        this.westHand = new Hand(50, height / 2, 100, height * 0.6);
+        this.northHand = new Hand(width / 2, 50, width * 0.75, 100);
+        this.eastHand = new Hand(width - 50, height / 2, 100, height * 0.6);
+
+        // Draw player hand
+        this.hand.renderOutline(this);
 
         // Create zones for other player hands
         // west player
-        let westHand = this.createHand(this, 100, window.innerHeight / 2,
-            200, window.innerHeight - 200);
+        this.westHand.renderOutline(this);
 
         // north player
-        let northHand = this.createHand(this, window.innerWidth / 2, 100,
-            window.innerWidth - 600, 200);
+        this.northHand.renderOutline(this);
 
         // east player
-        let eastHand = this.createHand(this, window.innerWidth - 100, window.innerHeight / 2,
-            200, window.innerHeight - 200);
+        this.eastHand.renderOutline(this);
 
         // Temporary Server code
         this.socket = io("http://localhost:3000");
@@ -63,6 +66,10 @@ export default class BigTwo extends Phaser.Scene {
             console.log(`User ${id} left.`);
         });
 
+        this.socket.on('playerNumber', function (playerNumber) {
+            this.playerNumber = playerNumber;
+        });
+
         /**
          * Get the player's hand from the server and add the cards to the hand and 
          * draw them onto the scene 
@@ -71,6 +78,7 @@ export default class BigTwo extends Phaser.Scene {
             console.log(self.hand);
             console.log(data);
             let spriteName;
+            let startX = self.hand.x - (self.hand.width / 2);
             for (let i = 0; i < data.length; i++) {
                 switch (data[i].value) {
                     case 1:
@@ -91,10 +99,51 @@ export default class BigTwo extends Phaser.Scene {
                 }
                 let card = new Card(data[i].value, data[i].suit, data[i].suitValue,
                     'playingCards', spriteName, self);
-                card.render((self.hand.zone.x - 350) + (self.hand.zone.data.values.cards * 20),
-                    self.hand.zone.y);
-                self.hand.zone.data.values.cards++;
+                card.render(
+                    (startX) + (i * (self.hand.width / data.length)),
+                    self.hand.y);
                 self.hand.add(card);
+            }
+        });
+
+        /**
+         * Get the other player's hand sizes and draw the cards onto the scene
+         */
+        this.socket.on('handSizes', function (handSizes) {
+            handSizes.splice(self.playerNumber, 1);
+            console.log(handSizes);
+            let key = 'cardBacks';
+            let spriteName = 'cardBack_red1.png';
+            if (handSizes.length >= 1) {
+                // Add and draw west player hand
+                let start = self.westHand.y - (self.westHand.height / 2);
+                for (let i = 0; i < handSizes[0]; i++) {
+                    let card = new Card(-1, -1, -1, key, spriteName, self)
+                    card.render(self.westHand.x,
+                        start + ((self.westHand.height / handSizes[0]) * i));
+                    self.westHand.add(card);
+                }
+            }
+
+            if (handSizes.length >= 2) {
+                // Add and draw north player hand
+                let start = self.northHand.x - (self.northHand.width / 2);
+                for (let i = 0; i < handSizes[1]; i++) {
+                    let card = new Card(-1, -1, -1, key, spriteName, self);
+                    card.render(start + ((self.northHand.width / handSizes[1]) * i),
+                        self.northHand.y)
+                    self.northHand.add(card);
+                }
+            }
+            if (handSizes.length >= 3) {
+                // Add and draw east player hand
+                let start = self.eastHand.y - (self.eastHand.height / 2);
+                for (let i = 0; i < handSizes[2]; i++) {
+                    let card = new Card(null, null, null, key, spriteName, self)
+                    self.eastHand.add(card);
+                    card.render(self.eastHand.x,
+                        start + ((self.eastHand.height / handSizes[2]) * i));
+                }
             }
         });
 
@@ -108,25 +157,13 @@ export default class BigTwo extends Phaser.Scene {
             self.socket.emit('dealCards');
         });
 
-        // Test cards
-        let playingCardTexture = this.textures.get('playingCards');
-
-        let frames = playingCardTexture.getFrameNames();
-
-        this.card1 = this.add.image(200, 200, 'playingCards', frames[5])
-            .setScale(0.75, 0.75).setInteractive();
-        this.card2 = this.add.image(200, 400, 'playingCards', frames[10])
-            .setScale(0.75, 0.75).setInteractive();
-        this.input.setDraggable(this.card1);
-        this.input.setDraggable(this.card2);
-
         // TODO: Needs Refactoring
         this.input.on('drag', this.onDragCard);
 
         this.input.on('dragstart', function (pointer, gameObject) {
             gameObject.setTint(0xff69b4);
             this.scene.children.bringToTop(gameObject);
-        })
+        });
 
         this.input.on('dragend', function (pointer, gameObject, dropped) {
             gameObject.setTint();
@@ -134,16 +171,14 @@ export default class BigTwo extends Phaser.Scene {
                 gameObject.x = gameObject.input.dragStartX;
                 gameObject.y = gameObject.input.dragStartY;
             }
-        })
+        });
 
         this.input.on('drop', function (pointer, gameObject, handZone) {
             handZone.data.values.cards++;
             gameObject.x = (handZone.x - 350) + (handZone.data.values.cards * 25);
             gameObject.y = handZone.y;
             gameObject.disableInteractive();
-        })
-
-        console.log(this.hand);
+        });
     }
 
     update() {
@@ -163,22 +198,5 @@ export default class BigTwo extends Phaser.Scene {
 
     onConnect() {
         console.log('Connected!');
-    }
-
-    createHand(scene, x, y, width, height) {
-        let zone = scene.add.zone(x,
-            y,
-            width,
-            height).setRectangleDropZone(width, height);
-        zone.setData({ cards: 0 });
-        scene.add.graphics()
-            .lineStyle(4, 0xffffff)
-            .strokeRect(zone.x - zone.input.hitArea.width / 2,
-                zone.y - zone.input.hitArea.height / 2,
-                zone.input.hitArea.width,
-                zone.input.hitArea.height
-            );
-
-        return zone;
     }
 }

@@ -12,12 +12,12 @@ export default class Card{
         this.scene = scene;
     }
 
-    render (x, y)  {
-        this.card = this.scene.add.image(x, y, this.key, this.sprite)
-            .setScale(0.7, 0.7)
+    render(x, y) {
+        let card = this.scene.add.image(x, y, this.key, this.sprite)
+            .setScale(0.45, 0.45)
             .setInteractive();
-        this.scene.input.setDraggable(this.card);
-        return this.card;
+
+        return card;
     }
 
 }

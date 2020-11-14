@@ -4,25 +4,25 @@
  */
 
 export default class Hand {
-    constructor() {
+    constructor(x, y, width, height) {
         this.hand = [];
-        this.zone = null;
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
     }
 
-    renderHand(scene, x, y) {
+/*    renderHand(scene, x, y) {
         let hand = scene.add.zone(700, 375, 900, 250).setRectangleDropZone(900, 250);
         hand.setData({ cards: 0 });
         return hand;
-    }
+    }*/
 
-    renderOutline(hand) {
-        let handOutline = this.scene.add.graphics();
+    renderOutline(scene) {
+        let handOutline = scene.add.graphics();
         handOutline.lineStyle(4, 0xffffff);
-        handOutline.strokeRect(hand.x - hand.input.hitArea.width / 2,
-            hand.y - hand.input.hitArea.height / 2,
-            hand.input.hitArea.width,
-            hand.input.hitArea.height
-        )
+        handOutline.strokeRect(this.x - this.width / 2,
+            this.y - this.height / 2, this.width, this.height);
     }
 
     /**

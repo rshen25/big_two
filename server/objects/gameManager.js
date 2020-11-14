@@ -1,17 +1,12 @@
 /**
  * Game Manager singleton that manages the game logic and assets
  */
-'use strict'
-
 let Player = require('./player.js');
 let Deck = require('./deck.js');
 
 module.exports = class GameManager {
 
     static instance = null;
-
-    players = {};
-    numberOfPlayers = 0;
 
     suitRanking = {
         'Spades': 0,
@@ -27,6 +22,8 @@ module.exports = class GameManager {
         }
         this.deck = new Deck(this.suitRanking);
         this.previouslyPlayed = null;
+        this.numberOfPlayers = 0;
+        this.players = {};
         return this.instance;
     }
 
@@ -35,7 +32,7 @@ module.exports = class GameManager {
      * @param {any} id - The player id
      */
     connectPlayer(id) {
-        this.numberOfPlayers += 1;
+        this.numberOfPlayers++;
         this.players[id] = new Player(id, this.numberOfPlayers);
 
         console.log(`A user connected. Number of Players: ${this.numberOfPlayers}`);
@@ -51,7 +48,7 @@ module.exports = class GameManager {
         // Remove the player from the players object
         delete this.players.id;
 
-        this.numberOfPlayers -= 1;
+        this.numberOfPlayers--;
     }
 
     /**
