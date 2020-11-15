@@ -12,12 +12,10 @@ export default class Hand {
         this.height = height;
     }
 
-/*    renderHand(scene, x, y) {
-        let hand = scene.add.zone(700, 375, 900, 250).setRectangleDropZone(900, 250);
-        hand.setData({ cards: 0 });
-        return hand;
-    }*/
-
+    /**
+     * Draws a rectangle to visualize where the hand is in the game scene
+     * @param {any} scene - The current game scene
+     */
     renderOutline(scene) {
         let handOutline = scene.add.graphics();
         handOutline.lineStyle(4, 0xffffff);
@@ -31,5 +29,19 @@ export default class Hand {
      */
     add(card) {
         this.hand.push(card);
+    }
+
+    /**
+     * Goes through each card in the hand checking to see if it has been selected
+     * @returns {Array} - An array of cards the user has selected to be played
+     */
+    getSelectedCards() {
+        let selectedCards = [];
+        for (let i = 0; i < this.hand.length; i++) {
+            if (this.hand[i].isSelected) {
+                selectedCards.push(this.hand[i]);
+            }
+        }
+        return selectedCards;
     }
 }

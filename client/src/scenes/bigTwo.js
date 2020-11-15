@@ -13,6 +13,7 @@ export default class BigTwo extends Phaser.Scene {
         this.isHost = false;
         this.playerNumber = -1;
         this.otherPlayers = 0;
+        this.cardsToBePlayed = [];
     }
 
     preload() {
@@ -41,7 +42,9 @@ export default class BigTwo extends Phaser.Scene {
         // Draw player hand
         this.hand.renderOutline(this);
 
-        // Create zones for other player hands
+        /*
+         * Create zones for other player hands
+         */
         // west player
         this.westHand.renderOutline(this);
 
@@ -71,6 +74,11 @@ export default class BigTwo extends Phaser.Scene {
         });
 
         /**
+         * Create events for the scene to listen to
+         */
+        this.events.on('playCards', this.playCards);
+
+        /**
          * Get the player's hand from the server and add the cards to the hand and 
          * draw them onto the scene 
          */
@@ -78,7 +86,7 @@ export default class BigTwo extends Phaser.Scene {
             console.log(self.hand);
             console.log(data);
             let spriteName;
-            let startX = self.hand.x - (self.hand.width / 2);
+            let startX = self.hand.x - (self.hand.width / 2) + 30;
             for (let i = 0; i < data.length; i++) {
                 switch (data[i].value) {
                     case 1:
@@ -97,11 +105,15 @@ export default class BigTwo extends Phaser.Scene {
                         spriteName = `card${data[i].suit}${data[i].value}.png`;
                         break;
                 }
-                let card = new Card(data[i].value, data[i].suit, data[i].suitValue,
-                    'playingCards', spriteName, self);
-                card.render(
-                    (startX) + (i * (self.hand.width / data.length)),
-                    self.hand.y);
+
+                let card = new Card(self,
+                    (startX) + (i * (self.hand.width / (data.length + 1))),
+                    self.hand.y,
+                    'playingCards',
+                    spriteName,
+                    data[i].value,
+                    data[i].suit,
+                    data[i].suitValue);
                 self.hand.add(card);
             }
         });
@@ -116,46 +128,70 @@ export default class BigTwo extends Phaser.Scene {
             let spriteName = 'cardBack_red1.png';
             if (handSizes.length >= 1) {
                 // Add and draw west player hand
-                let start = self.westHand.y - (self.westHand.height / 2);
+                let start = self.westHand.y - (self.westHand.height / 2) + 30;
                 for (let i = 0; i < handSizes[0]; i++) {
-                    let card = new Card(-1, -1, -1, key, spriteName, self)
-                    card.render(self.westHand.x,
-                        start + ((self.westHand.height / handSizes[0]) * i));
+                    let card = new Card(self,
+                        self.westHand.x,
+                        start + ((self.westHand.height / (handSizes[0] + 1)) * i),
+                        key,
+                        spriteName,
+                        -1, -1, -1)
+                        .setAngle(-90);
+                    card.disableInteractive();
                     self.westHand.add(card);
                 }
             }
 
             if (handSizes.length >= 2) {
                 // Add and draw north player hand
-                let start = self.northHand.x - (self.northHand.width / 2);
+                let start = self.northHand.x - (self.northHand.width / 2) + 30;
                 for (let i = 0; i < handSizes[1]; i++) {
-                    let card = new Card(-1, -1, -1, key, spriteName, self);
-                    card.render(start + ((self.northHand.width / handSizes[1]) * i),
-                        self.northHand.y)
+                    let card = new Card(self,
+                        start + ((self.northHand.width / (handSizes[1] + 1)) * i),
+                        self.northHand.y,
+                        key,
+                        spriteName,
+                        -1, -1, -1)
+                        .setAngle(180);
+                    card.disableInteractive();
                     self.northHand.add(card);
                 }
             }
             if (handSizes.length >= 3) {
                 // Add and draw east player hand
-                let start = self.eastHand.y - (self.eastHand.height / 2);
+                let start = self.eastHand.y - (self.eastHand.height / 2) + 30;
                 for (let i = 0; i < handSizes[2]; i++) {
-                    let card = new Card(null, null, null, key, spriteName, self)
+                    let card = new Card(self,
+                        self.eastHand.x,
+                        start + ((self.eastHand.height / (handSizes[2] + 1)) * i),
+                        key,
+                        spriteName,
+                        -1, -1, -1)
+                        .setAngle(90);
+                    card.disableInteractive();
                     self.eastHand.add(card);
-                    card.render(self.eastHand.x,
-                        start + ((self.eastHand.height / handSizes[2]) * i));
                 }
             }
         });
 
         // Create a deal cards button to start dealing cards to the players
-        this.dealText = this.add.text(75, 350, ['DEAL CARDS'])
+        this.dealText = this.add.text(width / 2, height / 2, ['DEAL CARDS'])
             .setFontSize(18).setFontFamily('Trebuchet MS')
             .setColor('#00ffff').setInteractive();
 
-        //this.dealText.on('pointerdown', this.dealCards);
         this.dealText.on('pointerdown', function () {
             self.socket.emit('dealCards');
         });
+
+        // Create the play cards button
+        this.playBtn = this.add.text(width - 70, height - 100, ['PLAY'])
+            .setFontSize(18).setFontFamily('Trebuchet MS')
+            .setColor('#00ffff').setInteractive();
+
+        // Create the pass turn button
+        this.passBtn = this.add.text(width - 70, height - 50, ['PASS'])
+            .setFontSize(18).setFontFamily('Trebuchet MS')
+            .setColor('#00ffff').setInteractive();
 
         // TODO: Needs Refactoring
         this.input.on('drag', this.onDragCard);
@@ -188,6 +224,17 @@ export default class BigTwo extends Phaser.Scene {
     dealCards(socket) {
         socket.emit('dealCards');
         console.log("Client: Cards Dealt");
+    }
+
+    playCards() {
+        // Get selected cards
+        let selectedCards = this.hand.getSelectedCards();
+
+        // TODO: Check if the cards can be played
+        
+            // If it can be played, send it to the server for further processing
+
+            // Else, display message - Invalid Play
     }
 
     onDragCard(pointer, gameObject, dragX, dragY) {
