@@ -31,4 +31,20 @@ export default class Card extends Phaser.GameObjects.Image{
             this.isSelected = true;
         }
     }
+
+    /**
+     * Compares the current card with another card and sees which one is higher, returns 1
+     * if the current card is higher, -1 otherwise
+     * @param {Card} otherCard - The other card object to compare against
+     * @returns {boolean} - Returns true if card is higher than other card, false otherwise
+     */
+    compareTo(otherCard) {
+        if (this.value < otherCard.value) {
+            return false;
+        }
+        if (this.value == otherCard.value && this.suitValue < otherCard.suitValue) {
+            return false;
+        }
+        return true;
+    }
 }

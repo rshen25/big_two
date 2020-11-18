@@ -26,7 +26,7 @@ function onConnect(socket) {
     // Deal cards to players when button is pressed by host
     socket.on('dealCards', dealCards);
 
-    // TO DO: when a card is played
+    // When a card is played
     socket.on('cardPlayed', function (gameObject, isPlayerA) {
         io.emit('cardPlayed', gameObject, isPlayerA);
     });
@@ -44,6 +44,7 @@ function dealCards() {
     let handSizes = [];
     // Send the hands to each player
     for (const id in GameManager.players) {
+        GameManager.players[id].hand.sortByValue(0, GameManager.players[id].hand.hand.length);
         io.to(id).emit('handDealt', GameManager.players[id].hand.hand);
         handSizes.push(GameManager.players[id].hand.hand.length);
     }

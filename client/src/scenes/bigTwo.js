@@ -14,6 +14,7 @@ export default class BigTwo extends Phaser.Scene {
         this.playerNumber = -1;
         this.otherPlayers = 0;
         this.cardsToBePlayed = [];
+        this.lastPlayed = [];
     }
 
     preload() {
@@ -76,7 +77,7 @@ export default class BigTwo extends Phaser.Scene {
         /**
          * Create events for the scene to listen to
          */
-        this.events.on('playCards', this.playCards);
+        this.events.on('playCards', this.playCards, this);
 
         /**
          * Get the player's hand from the server and add the cards to the hand and 
@@ -89,9 +90,6 @@ export default class BigTwo extends Phaser.Scene {
             let startX = self.hand.x - (self.hand.width / 2) + 30;
             for (let i = 0; i < data.length; i++) {
                 switch (data[i].value) {
-                    case 1:
-                        spriteName = `card${data[i].suit}A.png`;
-                        break;
                     case 11:
                         spriteName = `card${data[i].suit}J.png`;
                         break;
@@ -100,6 +98,12 @@ export default class BigTwo extends Phaser.Scene {
                         break;
                     case 13:
                         spriteName = `card${data[i].suit}K.png`;
+                        break;
+                    case 14:
+                        spriteName = `card${data[i].suit}A.png`;
+                        break;
+                    case 15:
+                        spriteName = `card${data[i].suit}2.png`;
                         break;
                     default:
                         spriteName = `card${data[i].suit}${data[i].value}.png`;
@@ -226,15 +230,41 @@ export default class BigTwo extends Phaser.Scene {
         console.log("Client: Cards Dealt");
     }
 
+    /**
+     * Attempts to play the cards the player has selected, if valid a request will be 
+     * sent to the server for further validation before it will actually be played
+     */
     playCards() {
         // Get selected cards
         let selectedCards = this.hand.getSelectedCards();
 
         // TODO: Check if the cards can be played
-        
-            // If it can be played, send it to the server for further processing
+         // If it can be played, send it to the server for further processing
+        if (this.checkIfValidPlayHand(selectedCards)) {
+            this.socket.emit('playedCards', selectedCards);
+        }
+        // Else, display message - Invalid Play
+        else {
+            console.log('Invalid Play');
+        }
+    }
 
-            // Else, display message - Invalid Play
+    /**
+     * Checks if the current cards selected to be played is a valid play
+     * @returns {boolean} - True if valid, false otherwise
+     */
+    checkIfValidPlayHand(selectedCards) {
+        let numCards = selectedCards.length;
+        // If nothing was played last or everyone has passed
+        if (this.lastPlayed.length == 0) {
+            return true;
+        }
+        if (numCards == this.lastPlayed.length) {
+            // Check if the play is a higher value than the last played
+        }
+
+        // Check if it's quad or a bomb
+        return true;
     }
 
     onDragCard(pointer, gameObject, dragX, dragY) {

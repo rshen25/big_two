@@ -31,6 +31,56 @@ export default class Hand {
         this.hand.push(card);
     }
 
+
+    /**
+     * Partition function, used in the quicksort
+     * @param {integer} lowerIndex - The starting index of the array
+     * @param {integer} pivotIndex - The index of the pivot
+     * @returns {integer} - The index where the pivot is placed after the sorting
+     */
+    partition(lowerIndex, pivotIndex) {
+        l = lowerIndex - 1;
+
+        for (let i = lowerIndex; i < pivotIndex; i++) {
+            if (this.hand[i].value <= this.hand[pivotIndex].value) {
+                l++;
+                [this.hand[l], this.hand[i]] = [this.hand[i], this.hand[l]];
+            }
+        }
+        [this.hand[l + 1], this.hand[pivotIndex]] = [this.hand[pivotIndex], this.hand[l + 1]]
+        return l + 1;
+    }
+
+    /**
+     * Helper function used to sort the hand in ascending order by value
+     * @param {integer} first - The starting index to start sorting from
+     * @param {integer} last - The index to stop sorting
+     */
+    sortValueHelper(first, last) {
+        if (first < last) {
+            pivot = partition(first, last - 1);
+            this.sortValueHelper(first, pivot - 1);
+            this.sortValueHelper(pivot + 1, last);
+        }
+    }
+
+    /**
+     * Sorts the hand in ascending order based on their card value and suit
+     * */
+    sort() {
+        // Sort by value
+        sortValueHelper(0, this.hand.length);
+
+        // Then sort by suit
+        prevValue = this.hand[0];
+        for (let i = 0; i < this.hand.length - 1; i++) {
+            if (this.hand[i].suitValue > this.hand[i + 1].suitvalue &&
+                this.hand[i].value == this.hand[i + 1].value) {
+                [this.hand[i], this.hand[i + 1]] = [this.hand[i + 1], this.hand[i]];
+            }
+        }
+    }
+
     /**
      * Goes through each card in the hand checking to see if it has been selected
      * @returns {Array} - An array of cards the user has selected to be played

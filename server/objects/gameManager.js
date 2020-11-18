@@ -52,6 +52,13 @@ module.exports = class GameManager {
     }
 
     /**
+     * Randomly generates the turn order for each player.
+     * */
+    generatePlayerOrder() {
+        return turnOrder
+    }
+
+    /**
      * Deals the cards to all the players in the game
      */
     dealCards() {
