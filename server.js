@@ -12,12 +12,18 @@ const gameManager = require('./server/objects/gameManager.js');
 
 let GameManager = new gameManager();
 
+// When a user connects to the server
 io.on('connection', onConnect);
 
 http.listen(3000, function () {
     console.log(`Listening on ${http.address().port}`);
 });
 
+/**
+ * Adds the client to the list of players connected, adds the event listeners for 
+ * the client
+ * @param {Socket} socket - socket object of the connected player
+ */
 function onConnect(socket) {
     console.log('A user connected: ' + socket.id);
     GameManager.connectPlayer(socket.id);
@@ -26,19 +32,25 @@ function onConnect(socket) {
     // Deal cards to players when button is pressed by host
     socket.on('dealCards', dealCards);
 
-    // When a card is played
-    socket.on('cardPlayed', function (gameObject, isPlayerA) {
-        io.emit('cardPlayed', gameObject, isPlayerA);
-    });
+    // When a card is played by the client
+    socket.on('cardPlayed', cardPlayed);
 
+    // When the client disconnects
     socket.on('disconnect', onDisconnect);
 }
 
+/**
+ * When a user disconnects, deletes the player and their id
+ * @param {Socket} socket - socket object for the given player that has disconnected
+ */
 function onDisconnect(socket) {
-    GameManager.disconnectPlayer(socket.id);
     io.emit('otherPlayerDisconnect', socket.id);
+    GameManager.disconnectPlayer(socket.id);
 }
 
+/**
+ * Deals cards to all the connected players and sends their hands to the respective client
+ */
 function dealCards() {
     hands = GameManager.dealCards();
     let handSizes = [];
@@ -51,4 +63,20 @@ function dealCards() {
     io.emit('handSizes', handSizes);
 
     console.log('Server: Cards dealt');
+}
+
+/**
+ * Calls the Game Manager to check if the card the client has attempted to play is valid,
+ * if so, it will remove the cards from the client's respective hand and send an 'ack'
+ * letting the client know the play is valid and ending their turn. Also sends the
+ * information to all the other players in the game
+ * @param {Array} cards - An array of cards the client is intending to play
+ * @param {integer} playerNumber - The player number of the client
+ */
+function cardPlayed(cards, id, playerNumber) {
+
+    // Call the Game Manager to see if the play is valid
+
+
+    io.emit('cardPlayed', gameObject);
 }

@@ -4,6 +4,7 @@
 import io from 'socket.io-client';
 import Card from '../objects/card.js';
 import Hand from '../objects/hand.js';
+import Rules from '../objects/gameRules.js';
 
 export default class BigTwo extends Phaser.Scene {
     constructor() {
@@ -15,6 +16,7 @@ export default class BigTwo extends Phaser.Scene {
         this.otherPlayers = 0;
         this.cardsToBePlayed = [];
         this.lastPlayed = [];
+        this.gameRules = new Rules();
     }
 
     preload() {
@@ -55,7 +57,9 @@ export default class BigTwo extends Phaser.Scene {
         // east player
         this.eastHand.renderOutline(this);
 
-        // Temporary Server code
+        /**
+         * Server listener code
+         */
         this.socket = io("http://localhost:3000");
 
         this.socket.on('connect', this.onConnect);
@@ -102,7 +106,7 @@ export default class BigTwo extends Phaser.Scene {
                     case 14:
                         spriteName = `card${data[i].suit}A.png`;
                         break;
-                    case 15:
+                    case 17:
                         spriteName = `card${data[i].suit}2.png`;
                         break;
                     default:
@@ -196,29 +200,6 @@ export default class BigTwo extends Phaser.Scene {
         this.passBtn = this.add.text(width - 70, height - 50, ['PASS'])
             .setFontSize(18).setFontFamily('Trebuchet MS')
             .setColor('#00ffff').setInteractive();
-
-        // TODO: Needs Refactoring
-        this.input.on('drag', this.onDragCard);
-
-        this.input.on('dragstart', function (pointer, gameObject) {
-            gameObject.setTint(0xff69b4);
-            this.scene.children.bringToTop(gameObject);
-        });
-
-        this.input.on('dragend', function (pointer, gameObject, dropped) {
-            gameObject.setTint();
-            if (!dropped) {
-                gameObject.x = gameObject.input.dragStartX;
-                gameObject.y = gameObject.input.dragStartY;
-            }
-        });
-
-        this.input.on('drop', function (pointer, gameObject, handZone) {
-            handZone.data.values.cards++;
-            gameObject.x = (handZone.x - 350) + (handZone.data.values.cards * 25);
-            gameObject.y = handZone.y;
-            gameObject.disableInteractive();
-        });
     }
 
     update() {
@@ -238,10 +219,9 @@ export default class BigTwo extends Phaser.Scene {
         // Get selected cards
         let selectedCards = this.hand.getSelectedCards();
 
-        // TODO: Check if the cards can be played
          // If it can be played, send it to the server for further processing
-        if (this.checkIfValidPlayHand(selectedCards)) {
-            this.socket.emit('playedCards', selectedCards);
+        if (gameRules.checkIfValidPlayHand(selectedCards)) {
+            this.socket.emit('playedCards', selectedCards, this.playerNumber);
         }
         // Else, display message - Invalid Play
         else {
@@ -249,31 +229,8 @@ export default class BigTwo extends Phaser.Scene {
         }
     }
 
-    /**
-     * Checks if the current cards selected to be played is a valid play
-     * @returns {boolean} - True if valid, false otherwise
-     */
-    checkIfValidPlayHand(selectedCards) {
-        let numCards = selectedCards.length;
-        // If nothing was played last or everyone has passed
-        if (this.lastPlayed.length == 0) {
-            return true;
-        }
-        if (numCards == this.lastPlayed.length) {
-            // Check if the play is a higher value than the last played
-        }
-
-        // Check if it's quad or a bomb
-        return true;
-    }
-
-    onDragCard(pointer, gameObject, dragX, dragY) {
-        gameObject.x = dragX;
-        gameObject.y = dragY;
-        console.log(this.hand);
-    }
-
-    onConnect() {
+    onConnect(playerNumber) {
+        this.playerNumber = playerNumber;
         console.log('Connected!');
     }
 }

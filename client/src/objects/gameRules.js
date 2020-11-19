@@ -5,18 +5,49 @@
 
 export default class Rules {
 
-    comboRanking = {
-        'Chop3Pairs': 10,  
-        'ChopQuad': 20,
-        'Chop4PairsHigher': 30,
+    constructor(lastPlayed) {
+        this.lastPlayed = lastPlayed;
     }
 
-    constructor() {
+    /**
+     * Checks to see whether the cards a player intends to play is a pair or not
+     * @param {Array} cardsToPlay - An array of card objects the player intends to play
+     * @returns {boolean} - True if it is a pair, false otherwise
+     */
+    isPair(cardsToPlay) {
+        if (cardsToPlay.length != 2) {
+            return false;
+        }
+        if (cardsToPlay.length == 2) {
+            if (cardsToPlay[0].value != cardsToPlay[1].value) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Checks to see whether the cards a player intends to play is a three of a kind or not
+     * @param {any} cardsToPlay - An array of card objects the player intends to play
+     * @returns {boolean} - True if its a triple, false otherwise
+     */
+    isTriple(cardsToPlay) {
+        let numCards = cardsToPlay.length;
+        if (numCards != 3) {
+            return false;
+        }
+        for (let i = 0; i < numCards - 1; i++) {
+            if (cardsToPlay[i].value != cardsToPlay[i + 1].value) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
      * Checks to see whether the cards a player intends to play is a straight or not
      * @param {Array} cardsToPlay - An array of card objects the player intends to play
+     * @returns {boolean} - True if it is a straight, false otherwise
      */
     isStraight(cardsToPlay) {
         for (let i = 0; i < cardsToPlay.length - 1; i++) {
@@ -71,33 +102,62 @@ export default class Rules {
                 }
             }
         }
-
         return true;
     }
 
     /**
-     * Checks to see if the cards to be played are a combo, and returns information about the
-     * combination in an object
+     * Checks if the current cards selected to be played is a valid play
      * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {Object} - An object containing the 'type' of combo, the 'length', and 'value'
+     * @returns {boolean} - True if valid, false otherwise
      */
-    isCombo(cardsToPlay) {
-
-        // Check if its a straight
-        if (this.isStraight(cardsToPlay)) {
-
+    checkIfValidPlayHand(selectedCards) {
+        let numCards = selectedCards.length;
+        // If nothing was played last or everyone has passed
+        if (this.lastPlayed.length == 0) {
+            return true;
         }
-
-        // Check if its a four of a kind
-        if (this.isQuads(cardsToPlay)) {
-
+        // Same amount of cards are being played this round from the last
+        if (numCards == this.lastPlayed.length) {
+            if (numCards == 1) {
+                if (selectedCards[0].compareTo(lastPlayed[0])) {
+                    return true;
+                }
+            }
+            if (this.isPair(selectedCards) || this.isTriple(selectedCards) ||
+                this.isQuads(selectedCards)) {
+                if (selectedCards[1].compareTo(lastPlayed[1])) {
+                    return true;
+                }
+            }
+            if (this.isStraight(selectedCards) || this.isBomb(selectedCards)) {
+                if (selectedCards[numCards - 1].compareTo(this.lastPlayed[numCards - 1])) {
+                    return true;
+                }
+            }
         }
+        else {
+            // If a single two was played and the current play is to play a 'Bomb'
+            if (this.lastPlayed[0] == 2 &&
+                (this.isQuads(selectedCards) || this.isBomb(selectedCards))) {
+                return true;
+            } 
+            // If there were pair twos played and the current play is a 'Bomb'
+            if (this.isPair(this.lastPlayed) && selectedCards[0] == 2 &&
+                this.isBomb(selectedCards) && numCards >= 8) {
+                return true;
+            }
+            // If there were triple twos played and the current play is a 'Bomb'
+            if (this.isTriple(this.lastPlayed) && selectedCards[0] == 2 &&
+                this.isBomb(selectedCards) && numCards >= 10) {
+                return true;
+            }
 
-        // Check if its a bomb
-        if (this.isBomb(cardsToPlay)) {
-
+            if (this.isBomb(this.lastPlayed) &&
+                this.lastPlayed.length == 6 &&
+                this.isQuads(selectedCards)) {
+                return true;
+            }
         }
-
-        return {};
+        return false;
     }
 }

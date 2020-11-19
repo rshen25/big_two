@@ -23,7 +23,12 @@ module.exports = class Deck {
         for (let i = 0; i < suits.length; i++) {
             let suit = suits[i];
             for (let j = 3; j <= 15; j++) {
-                this.deck.push(new Card(j, suit, i));
+                if j == 15 {
+                    this.deck.push(new Card(17, suit, i));
+                }
+                else {
+                    this.deck.push(new Card(j, suit, i));
+                }
             }
         }
         console.log('Deck Initialized');

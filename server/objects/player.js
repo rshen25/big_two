@@ -13,11 +13,11 @@ module.exports = class Player {
         this.playerNumber = number;
     }
 
-    playCard() {
+    playCard(Card) {
 
     }
 
-    playCards() {
+    playCards(Cards) {
 
     }
 }
