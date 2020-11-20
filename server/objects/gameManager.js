@@ -24,6 +24,7 @@ module.exports = class GameManager {
         this.previouslyPlayed = [];
         this.numberOfPlayers = 0;
         this.players = {};
+        this.currentTurn = -1;
         return this.instance;
     }
 
@@ -52,10 +53,35 @@ module.exports = class GameManager {
     }
 
     /**
-     * Randomly generates the turn order for each player.
-     * */
+     * Generates the turn order for each player by going clock-wise from the player
+     * that has the three of spades in their hand
+     * @returns - The player number of the player that gets to go first
+     */
     generatePlayerOrder() {
-        return turnOrder
+        for (const id in this.players) {
+            let card = this.players[id].hand.getCard(0);
+            if (card.value == 3 && card.suitRanking == 0) {
+                return this.players[id].playerNumber;
+                break;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Attempts to plays the cards of the player
+     * @param {Array} cards - An array of card objects the player intends to play
+     * @param {string} id - The string id of the player
+     * @returns {boolean} - True if the cards were played
+     */
+    playCards(cards, id) {
+        // Call the Game Manager to see if the play is valid
+        if (this.checkIfValidPlayHand(cards)) {
+            return this.players[id].playCards(cards);
+        }
+        else {
+            return false;
+        }
     }
 
     /**
@@ -87,10 +113,10 @@ module.exports = class GameManager {
     }
 
     /**
- * Checks to see whether the cards a player intends to play is a pair or not
- * @param {Array} cardsToPlay - An array of card objects the player intends to play
- * @returns {boolean} - True if it is a pair, false otherwise
- */
+     * Checks to see whether the cards a player intends to play is a pair or not
+     * @param {Array} cardsToPlay - An array of card objects the player intends to play
+     * @returns {boolean} - True if it is a pair, false otherwise
+     */
     isPair(cardsToPlay) {
         if (cardsToPlay.length != 2) {
             return false;

@@ -2,7 +2,6 @@
  * A Player object that represents a single player in the game
  */
 
-//import Hand from './hand.js';
 let Hand = require('./hand.js');
 
 module.exports = class Player {
@@ -13,11 +12,21 @@ module.exports = class Player {
         this.playerNumber = number;
     }
 
-    playCard(Card) {
-
+    /**
+     * Removes the given card from the hand if found
+     * @param {Card} card - The card to be removed
+     * @returns {boolean} - True if the card is found in the hand and removed
+     */
+    playCard(card) {
+        return this.hand.removeCard(card);
     }
 
-    playCards(Cards) {
-
+    /**
+     * Removes the set of cards from the had if found
+     * @param {Array} cards - An array of card objects to be removed
+     * @returns {boolean} - True if all the cards provided are found and removed
+     */
+    playCards(cards) {
+        return this.hand.findAndRemoveCards(cards);
     }
 }

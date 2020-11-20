@@ -73,10 +73,16 @@ function dealCards() {
  * @param {Array} cards - An array of cards the client is intending to play
  * @param {integer} playerNumber - The player number of the client
  */
-function cardPlayed(cards, id, playerNumber) {
+function cardPlayed(cards, socket, playerNumber) {
 
     // Call the Game Manager to see if the play is valid
-
-
-    io.emit('cardPlayed', gameObject);
+    if (GameManager.playCards(cards, socket.id, playerNumber)) {
+        // Send the play to all other players
+        io.to(socket.id).emit('validPlay', true);
+        io.emit('otherPlayedCards', cards, socket.id, playerNumber);
+    }
+    else {
+        io.to(socket.id).emit('validPlay', false);
+        console.log(`Invalid play from ${socket.id}`);
+    }
 }

@@ -17,6 +17,7 @@ export default class BigTwo extends Phaser.Scene {
         this.cardsToBePlayed = [];
         this.lastPlayed = [];
         this.gameRules = new Rules();
+        this.id = null;
     }
 
     preload() {
@@ -221,7 +222,7 @@ export default class BigTwo extends Phaser.Scene {
 
          // If it can be played, send it to the server for further processing
         if (gameRules.checkIfValidPlayHand(selectedCards)) {
-            this.socket.emit('playedCards', selectedCards, this.playerNumber);
+            this.socket.emit('playedCards', selectedCards, this.socket);
         }
         // Else, display message - Invalid Play
         else {
