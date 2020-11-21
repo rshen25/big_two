@@ -26,11 +26,12 @@ module.exports = class GameManager {
         this.players = {};
         this.currentTurn = -1;
         return this.instance;
+        this.turnOrder = [];
     }
 
     /**
      * Adds a player to the game
-     * @param {any} id - The player id
+     * @param {string} id - The player id
      */
     connectPlayer(id) {
         this.numberOfPlayers++;
@@ -41,7 +42,7 @@ module.exports = class GameManager {
 
     /**
      * Removes a player from the game
-     * @param {any} id - The player id
+     * @param {string} id - The player id
      */
     disconnectPlayer(id) {
         console.log('User disconnected.');
@@ -55,17 +56,27 @@ module.exports = class GameManager {
     /**
      * Generates the turn order for each player by going clock-wise from the player
      * that has the three of spades in their hand
-     * @returns - The player number of the player that gets to go first
      */
     generatePlayerOrder() {
+        // Find the player who has the three of spades
+        let firstPlayer = 0;
         for (const id in this.players) {
             let card = this.players[id].hand.getCard(0);
             if (card.value == 3 && card.suitRanking == 0) {
-                return this.players[id].playerNumber;
+                firstPlayer = this.players[id].playerNumber;
+                this.turnOrder.push(firstPlayer);
                 break;
             }
         }
-        return -1;
+
+        // Generate the remainder of the players
+        for (let i = 1; i < 4; i++) {
+            if (firstPlayer + 1 % 4 == 0) {
+                firstPlayer = 1;
+            }
+            this.turnOrder.push(++firstPlayer);
+        }
+        console.log(`Turn order: ${this.turnOrder}`);
     }
 
     /**
@@ -131,7 +142,7 @@ module.exports = class GameManager {
 
     /**
      * Checks to see whether the cards a player intends to play is a three of a kind or not
-     * @param {any} cardsToPlay - An array of card objects the player intends to play
+     * @param {Array} cardsToPlay - An array of card objects the player intends to play
      * @returns {boolean} - True if its a triple, false otherwise
      */
     isTriple(cardsToPlay) {

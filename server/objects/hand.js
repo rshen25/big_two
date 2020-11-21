@@ -10,7 +10,7 @@ module.exports = class Hand {
 
     /**
      * Gets the card in the hand at the given index, if it exists
-     * @param {integer} index
+     * @param {integer} index - The position of the card in the hand
      * @returns {Card} The card object at the given index
      */
     getCard(index) {
@@ -112,9 +112,9 @@ module.exports = class Hand {
      * @returns {integer} - The index where the pivot is placed after the sorting
      */
     partition(lowerIndex, pivotIndex) {
-        l = lowerIndex - 1;
+        let l = lowerIndex - 1;
 
-        for (let i = lowerIndex; i < pivotIndex; i++) {
+        for (let i = lowerIndex; i <= pivotIndex - 1; i++) {
             if (this.hand[i].value <= this.hand[pivotIndex].value) {
                 l++;
                 [this.hand[l], this.hand[i]] = [this.hand[i], this.hand[l]];
@@ -131,7 +131,7 @@ module.exports = class Hand {
      */
     sortValueHelper(first, last) {
         if (first < last) {
-            pivot = partition(first, last - 1);
+            let pivot = this.partition(first, last);
             this.sortValueHelper(first, pivot - 1);
             this.sortValueHelper(pivot + 1, last);
         }
@@ -143,14 +143,22 @@ module.exports = class Hand {
      */
     sortByValue() {
         // Sort by value
-        sortValueHelper(0, this.hand.length);
+        this.sortValueHelper(0, this.hand.length - 1);
 
         // Then sort by suit
-        prevValue = this.hand[0];
-        for (let i = 0; i < this.hand.length - 1; i++) {
-            if (this.hand[i].suitValue > this.hand[i + 1].suitvalue &&
-                this.hand[i].value == this.hand[i + 1].value) {
-                [this.hand[i], this.hand[i + 1]] = [this.hand[i + 1], this.hand[i]];
+        let i = 0;
+        while (i < this.hand.length - 1) {
+            let j = i;
+            while (j < this.hand.length - 1 &&
+                this.hand[j].value == this.hand[j + 1].value) {
+                if (this.hand[j].suitValue > this.hand[j + 1].suitValue) {
+                    [this.hand[j], this.hand[j + 1]] = [this.hand[j + 1], this.hand[j]];
+                }
+                j++;
+            }
+            if (this.hand[i].value != this.hand[i + 1].value ||
+                this.hand[i].suitValue < this.hand[i + 1].suitValue) {
+                i++;
             }
         }
     }

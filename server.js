@@ -78,11 +78,11 @@ function cardPlayed(cards, socket, playerNumber) {
     // Call the Game Manager to see if the play is valid
     if (GameManager.playCards(cards, socket.id, playerNumber)) {
         // Send the play to all other players
-        io.to(socket.id).emit('validPlay', true);
+        io.to(socket.id).emit('validPlay', cards);
         io.emit('otherPlayedCards', cards, socket.id, playerNumber);
     }
     else {
-        io.to(socket.id).emit('validPlay', false);
+        io.to(socket.id).emit('validPlay', []);
         console.log(`Invalid play from ${socket.id}`);
     }
 }

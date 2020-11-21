@@ -17,6 +17,7 @@ export default class BigTwo extends Phaser.Scene {
         this.cardsToBePlayed = [];
         this.lastPlayed = [];
         this.gameRules = new Rules();
+        this.turn = false;
         this.id = null;
     }
 
@@ -79,10 +80,11 @@ export default class BigTwo extends Phaser.Scene {
             this.playerNumber = playerNumber;
         });
 
-        /**
-         * Create events for the scene to listen to
-         */
-        this.events.on('playCards', this.playCards, this);
+        this.socket.on('isTurn', function () {
+            this.turn = true;
+            // Enable the play and pass buttons
+            this.togglePlayPassButtons();
+        });
 
         /**
          * Get the player's hand from the server and add the cards to the hand and 
@@ -192,21 +194,36 @@ export default class BigTwo extends Phaser.Scene {
             self.socket.emit('dealCards');
         });
 
-        // Create the play cards button
+        /**
+         * Create the play cards button
+         */
         this.playBtn = this.add.text(width - 70, height - 100, ['PLAY'])
-            .setFontSize(18).setFontFamily('Trebuchet MS')
-            .setColor('#00ffff').setInteractive();
+            .setFontSize(18).setFontFamily('Trebuchet MS');
 
-        // Create the pass turn button
+        this.playBtn.on('pointerdown', this.playCards, this);
+
+
+        /**
+         * Create the pass turn button
+         */
         this.passBtn = this.add.text(width - 70, height - 50, ['PASS'])
-            .setFontSize(18).setFontFamily('Trebuchet MS')
-            .setColor('#00ffff').setInteractive();
+            .setFontSize(18).setFontFamily('Trebuchet MS');
+
+        this.passBtn.on('pointerdown', this.passTurn, this);
+
+        this.togglePlayPassButtons();
+
     }
 
     update() {
 
     }
 
+    /**
+     * Sends a message to the server to make it deal the deck of cards to all players in
+     * the current game
+     * @param {Socket} socket - The socket information of this client
+     */
     dealCards(socket) {
         socket.emit('dealCards');
         console.log("Client: Cards Dealt");
@@ -223,10 +240,48 @@ export default class BigTwo extends Phaser.Scene {
          // If it can be played, send it to the server for further processing
         if (gameRules.checkIfValidPlayHand(selectedCards)) {
             this.socket.emit('playedCards', selectedCards, this.socket);
+            // Disable the hand
+            this.hand.disableHand();
         }
-        // Else, display message - Invalid Play
+        // else, display message - Invalid Play
         else {
             console.log('Invalid Play');
+        }
+    }
+
+    /**
+     * Remove the cards from the hand
+     */
+    removeCards(cards) {
+        if (cards.length != 0) {
+            this.hand.findAndRemoveCards(cards);
+            this.hand.enableHand();
+        } 
+    }
+
+    /**
+     * Passes the turn of the player and sends a message to the server of the passed turn
+     */
+    passTurn() {
+        this.turn = false;
+        this.socket.emit('passTurn', this.socket);
+    }
+
+    /**
+     * Toggles the play and pass buttons to on or off depending if it is the client's turn
+     */
+    togglePlayPassButtons() {
+        if (this.turn) {
+            this.playBtn.setInteractive();
+            this.playBtn.setColor('#00ffff');
+            this.passBtn.setInteractive();
+            this.passBtn.setColor('#00ffff');
+        }
+        else {
+            this.playBtn.disableInteractive();
+            this.playBtn.setColor('#7d7d7d');
+            this.passBtn.disableInteractive()
+            this.passBtn.setColor('#7d7d7d');
         }
     }
 
