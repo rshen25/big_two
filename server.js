@@ -30,10 +30,13 @@ function onConnect(socket) {
     io.to(socket.id).emit('playerNumber', GameManager.numberOfPlayers);
 
     // Deal cards to players when button is pressed by host
-    socket.on('dealCards', dealCards);
+    socket.on('startGame', startGame);
 
     // When a card is played by the client
     socket.on('cardPlayed', cardPlayed);
+
+    // When a client passes their turn
+    socket.on('passTurn', playerPass);
 
     // When the client disconnects
     socket.on('disconnect', onDisconnect);
@@ -51,7 +54,9 @@ function onDisconnect(socket) {
 /**
  * Deals cards to all the connected players and sends their hands to the respective client
  */
-function dealCards() {
+function startGame() {
+    GameManager.resetGame();
+
     hands = GameManager.dealCards();
     let handSizes = [];
     // Send the hands to each player
@@ -63,6 +68,10 @@ function dealCards() {
     io.emit('handSizes', handSizes);
 
     console.log('Server: Cards dealt');
+
+    GameManager.generatePlayerOrder();
+
+    io.emit('nextTurn', GameManager.currentTurn);
 }
 
 /**
@@ -80,9 +89,20 @@ function cardPlayed(cards, socket, playerNumber) {
         // Send the play to all other players
         io.to(socket.id).emit('validPlay', cards);
         io.emit('otherPlayedCards', cards, socket.id, playerNumber);
+        io.emit('nextTurn', GameManager.currentTurn, []);
     }
     else {
         io.to(socket.id).emit('validPlay', []);
         console.log(`Invalid play from ${socket.id}`);
     }
+}
+
+/**
+ * Passes the turn for the player, and send the action to the other clients acknowledge
+ */
+function playerPass() {
+    let currentPlayerNumber = GameManager.playPass();
+
+    // Send it to all players
+    io.emit('nextTurn', currentPlayerNumber, GameManager.lastPlayed);
 }

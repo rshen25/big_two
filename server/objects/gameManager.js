@@ -21,12 +21,16 @@ module.exports = class GameManager {
             this.deck = new Deck(this.suitRanking);
         }
         this.deck = new Deck(this.suitRanking);
-        this.previouslyPlayed = [];
-        this.numberOfPlayers = 0;
-        this.players = {};
-        this.currentTurn = -1;
+        this.numberOfPlayers = 0;           // The number of players in the game
+        this.players = {};                  // Players object to hold the players
+
+        this.previouslyPlayedTurn = 0;      // The turn where the last play was made
+        this.previouslyPlayed = [];         // The cards that were played last
+        this.currentTurn = -1;              // The current player's id
+        this.turnOrder = [];                // The order which players take their turns
+        this.turnNumber = 0;                // The number of turns that have elapsed
+
         return this.instance;
-        this.turnOrder = [];
     }
 
     /**
@@ -64,19 +68,36 @@ module.exports = class GameManager {
             let card = this.players[id].hand.getCard(0);
             if (card.value == 3 && card.suitRanking == 0) {
                 firstPlayer = this.players[id].playerNumber;
-                this.turnOrder.push(firstPlayer);
+                this.turnOrder.push(id);
                 break;
             }
         }
 
         // Generate the remainder of the players
         for (let i = 1; i < 4; i++) {
-            if (firstPlayer + 1 % 4 == 0) {
+            firstPlayer++;
+            if (firstPlayer % 4 == 0) {
                 firstPlayer = 1;
             }
-            this.turnOrder.push(++firstPlayer);
+            this.turnOrder.push(this.getPlayerID(firstPlayer));
         }
+
+        this.currentTurn = this.turnOrder[0];
         console.log(`Turn order: ${this.turnOrder}`);
+    }
+
+    /**
+     * Searches among all the players in the game for their ID given their player number
+     * @param {integer} playerNumber - The player's number to look for (1 - 4)
+     * @returns {string} - The player id string, or null if not found
+     */
+    getPlayerID(playerNumber) {
+        for (const id in this.players) {
+            if (this.players[id].playerNumber == playerNumber) {
+                return id;
+            }
+        }
+        return null;
     }
 
     /**
@@ -88,11 +109,29 @@ module.exports = class GameManager {
     playCards(cards, id) {
         // Call the Game Manager to see if the play is valid
         if (this.checkIfValidPlayHand(cards)) {
+            this.incrementTurnCount();
+            this.currentTurn = this.getCurrentPlayerTurn();
             return this.players[id].playCards(cards);
         }
         else {
             return false;
         }
+    }
+
+    /**
+     *  Increments the turn to the next player when a player passes
+     *  @returns {integer} - The player number of the new current turn's player 
+     */
+    playPass() {
+        this.incrementTurnCount();
+        this.currentTurn = this.getCurrentPlayerTurn();
+        // If every other player passes their turn and it goes back to the last player
+        // to play their cards, we reset last played so the player make a new play
+        if (this.turnOrder[this.previouslyPlayedTurn % this.numberOfPlayers] == nextPlayerTurn) {
+            this.lastPlayed = [];
+        }
+
+        return players[this.currentTurn].playerNumber;
     }
 
     /**
@@ -122,6 +161,38 @@ module.exports = class GameManager {
     resetDeck() {
         this.deck.reset();
     }
+
+    /**
+     * Resets the game to it initial state in preparation for a new game
+     */
+    resetGame() {
+        this.resetDeck();
+        this.previouslyPlayedTurn = 0;
+        this.previouslyPlayed = [];
+        this.currentTurn = 0;             
+        this.turnOrder = [];               
+        this.turnNumber = 0;
+    }
+
+    /**
+     * Gets the current player's turn id
+     * @returns {string} - The player id of the current turn's player
+     */
+    getCurrentPlayerTurn() {
+        return this.turnOrder[this.turnNumber % this.numberOfPlayers];
+    }
+
+    /**
+     * Increments the number of turns
+     */
+    incrementTurnCount() {
+        this.turnNumber++;
+    }
+
+
+    /****************************************************************************/
+    // Game Logic
+    /***************************************************************************/
 
     /**
      * Checks to see whether the cards a player intends to play is a pair or not
@@ -225,6 +296,13 @@ module.exports = class GameManager {
      * @returns {boolean} - True if valid, false otherwise
      */
     checkIfValidPlayHand(selectedCards) {
+        if (this.turnNumber == 0 &&
+            selectedCards[0].value != 3 &&
+            selectedCards[0].suitValue != 0) {
+            console.log('Must include 3 of Spades');
+            return false;
+        }
+
         let numCards = selectedCards.length;
         // If nothing was played last or everyone has passed
         if (this.lastPlayed.length == 0) {

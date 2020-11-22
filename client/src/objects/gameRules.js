@@ -111,6 +111,13 @@ export default class Rules {
      * @returns {boolean} - True if valid, false otherwise
      */
     checkIfValidPlayHand(selectedCards) {
+        if (this.turnNumber == 0 &&
+            selectedCards[0].value != 3 &&
+            selectedCards[0].suitValue != 0) {
+            console.log('Must include 3 of Spades');
+            return false;
+        }
+
         let numCards = selectedCards.length;
         // If nothing was played last or everyone has passed
         if (this.lastPlayed.length == 0) {

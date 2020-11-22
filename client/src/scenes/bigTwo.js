@@ -80,16 +80,14 @@ export default class BigTwo extends Phaser.Scene {
             this.playerNumber = playerNumber;
         });
 
-        this.socket.on('isTurn', function () {
-            this.turn = true;
-            // Enable the play and pass buttons
-            this.togglePlayPassButtons();
-        });
+        this.socket.on('nextTurn', this.checkIfTurn, this);
 
-        /**
-         * Get the player's hand from the server and add the cards to the hand and 
-         * draw them onto the scene 
-         */
+        this.socket.on('validPlay', this.validPlay);
+
+
+        // Get the player's hand from the server and add the cards to the hand and 
+        // draw them onto the scene 
+
         this.socket.on('handDealt', function (data) {
             console.log(self.hand);
             console.log(data);
@@ -129,9 +127,8 @@ export default class BigTwo extends Phaser.Scene {
             }
         });
 
-        /**
-         * Get the other player's hand sizes and draw the cards onto the scene
-         */
+        
+        // Get the other player's hand sizes and draw the cards onto the scene
         this.socket.on('handSizes', function (handSizes) {
             handSizes.splice(self.playerNumber, 1);
             console.log(handSizes);
@@ -225,7 +222,7 @@ export default class BigTwo extends Phaser.Scene {
      * @param {Socket} socket - The socket information of this client
      */
     dealCards(socket) {
-        socket.emit('dealCards');
+        socket.emit('startGame');
         console.log("Client: Cards Dealt");
     }
 
@@ -288,5 +285,29 @@ export default class BigTwo extends Phaser.Scene {
     onConnect(playerNumber) {
         this.playerNumber = playerNumber;
         console.log('Connected!');
+    }
+
+    /**
+     * Checks if the current turn is the clients
+     * @param {integer} playerNumber - The current turn's player number
+     * @param {Array} lastPlayed - The cards that were last played by a player
+     */
+    checkIfTurn(playerNumber, lastPlayed) {
+        if (playerNumber == this.playerNumber) {
+            this.turn = true;
+            // Enable the play and pass buttons
+            this.togglePlayPassButtons();
+        }
+        if (lastPlayed.length != 0) {
+            this.lastPlayed = lastPlayed;
+        }
+    }
+
+    /**
+     * Removes the cards from the client's last play from its hand
+     * @param {Array} cards - Array of cards the client has played
+     */
+    validPlay(cards) {
+
     }
 }
