@@ -29,4 +29,12 @@ module.exports = class Player {
     playCards(cards) {
         return this.hand.findAndRemoveCards(cards);
     }
+
+    /**
+     * Returns the player's hand
+     * @returns {Hand} - The player's hand
+     */
+    getHand() {
+        return this.hand;
+    }
 }

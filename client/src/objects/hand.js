@@ -10,11 +10,12 @@ export default class Hand {
         this.y = y;
         this.width = width;
         this.height = height;
+        this.playerNumber = -1;
     }
 
     /**
      * Draws a rectangle to visualize where the hand is in the game scene
-     * @param {any} scene - The current game scene
+     * @param {Scene} scene - The current game scene
      */
     renderOutline(scene) {
         let handOutline = scene.add.graphics();
@@ -37,7 +38,7 @@ export default class Hand {
 
     /**
      * Adds a card to the hand
-     * @param {any} card - A Card object
+     * @param {Card} card - A Card object
      */
     add(card) {
         this.hand.push(card);
@@ -120,7 +121,6 @@ export default class Hand {
         return true;
     }
 
-
     /**
      * Partition function, used in the quicksort
      * @param {integer} lowerIndex - The starting index of the array
@@ -200,5 +200,24 @@ export default class Hand {
         for (let i = 0; i < this.hand.length; i++) {
             this.hand[i].disableInterative();
         }
+    }
+
+    /**
+     * Checks to see if the hand does not currently hold any cards
+     * @returns {boolean} - True if the hand is currently empty, false otherwise
+     */
+    isEmpty() {
+        if (this.hand.length == 0) {
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * Pops the last card in the hand
+     */
+    pop() {
+        return this.hand.pop();
     }
 }

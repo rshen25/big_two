@@ -16,9 +16,12 @@ export default class BigTwo extends Phaser.Scene {
         this.otherPlayers = 0;
         this.cardsToBePlayed = [];
         this.lastPlayed = [];
+        this.westHand = null;
+        this.northHand = null;
+        this.eastHand = null;
+        this.hands = [];
         this.gameRules = new Rules();
         this.turn = false;
-        this.id = null;
     }
 
     preload() {
@@ -34,6 +37,7 @@ export default class BigTwo extends Phaser.Scene {
     }
 
     create() {
+        console.log(this.constructor.name);
         let self = this;
         let width = this.scale.width;
         let height = this.scale.height;
@@ -43,6 +47,10 @@ export default class BigTwo extends Phaser.Scene {
         this.westHand = new Hand(50, height / 2, 100, height * 0.6);
         this.northHand = new Hand(width / 2, 50, width * 0.75, 100);
         this.eastHand = new Hand(width - 50, height / 2, 100, height * 0.6);
+
+        this.hands.push(this.westHand);
+        this.hands.push(this.northHand);
+        this.hands.push(this.eastHand);
 
         // Draw player hand
         this.hand.renderOutline(this);
@@ -59,12 +67,44 @@ export default class BigTwo extends Phaser.Scene {
         // east player
         this.eastHand.renderOutline(this);
 
+        // Create a deal cards button to start dealing cards to the players
+        this.dealText = this.add.text(width / 2, height / 2, ['DEAL CARDS'])
+            .setFontSize(18).setFontFamily('Trebuchet MS')
+            .setColor('#00ffff').setInteractive();
+
+        this.dealText.on('pointerdown', function () {
+            self.socket.emit('dealCards');
+        });
+
+        /**
+         * Create the play cards button
+         */
+        this.playBtn = this.add.text(width - 70, height - 100, ['PLAY'])
+            .setFontSize(18).setFontFamily('Trebuchet MS');
+
+        this.playBtn.on('pointerdown', this.playCards, this);
+
+
+        /**
+         * Create the pass turn button
+         */
+        this.passBtn = this.add.text(width - 70, height - 50, ['PASS'])
+            .setFontSize(18).setFontFamily('Trebuchet MS');
+
+        this.passBtn.on('pointerdown', this.passTurn, this);
+
+        this.togglePlayPassButtons();
+
         /**
          * Server listener code
          */
         this.socket = io("http://localhost:3000");
 
         this.socket.on('connect', this.onConnect);
+
+        this.socket.on('playerNumber', function (playerNumber) {
+            self.playerNumber = playerNumber;
+        });
 
         this.socket.on('otherPlayerJoined', function (id) {
             this.otherPlayers += 1;
@@ -76,11 +116,26 @@ export default class BigTwo extends Phaser.Scene {
             console.log(`User ${id} left.`);
         });
 
+        this.socket.on('otherPlayedCards', this.otherPlayedCards, this);
+
         this.socket.on('playerNumber', function (playerNumber) {
-            this.playerNumber = playerNumber;
+            self.playerNumber = playerNumber;
+            let pNumber = playerNumber;
+            let players = [];
+            for (let i = 1; i < 4; i++) {
+                pNumber += i;
+                if (pNumber % 4 == 0) {
+                    pNumber = 1;
+                }
+                players.push(pNumber);
+            }
+
+            self.westHand.playerNumber = players[0];
+            self.northHand.playerNumber = players[1];
+            self.eastHand.playerNumber = players[2];
         });
 
-        this.socket.on('nextTurn', this.checkIfTurn, this);
+        this.socket.on('nextTurn', (id, lastPlayed) => { this.checkIfTurn(id, lastPlayed); });
 
         this.socket.on('validPlay', this.validPlay);
 
@@ -127,7 +182,6 @@ export default class BigTwo extends Phaser.Scene {
             }
         });
 
-        
         // Get the other player's hand sizes and draw the cards onto the scene
         this.socket.on('handSizes', function (handSizes) {
             handSizes.splice(self.playerNumber, 1);
@@ -181,35 +235,6 @@ export default class BigTwo extends Phaser.Scene {
                 }
             }
         });
-
-        // Create a deal cards button to start dealing cards to the players
-        this.dealText = this.add.text(width / 2, height / 2, ['DEAL CARDS'])
-            .setFontSize(18).setFontFamily('Trebuchet MS')
-            .setColor('#00ffff').setInteractive();
-
-        this.dealText.on('pointerdown', function () {
-            self.socket.emit('dealCards');
-        });
-
-        /**
-         * Create the play cards button
-         */
-        this.playBtn = this.add.text(width - 70, height - 100, ['PLAY'])
-            .setFontSize(18).setFontFamily('Trebuchet MS');
-
-        this.playBtn.on('pointerdown', this.playCards, this);
-
-
-        /**
-         * Create the pass turn button
-         */
-        this.passBtn = this.add.text(width - 70, height - 50, ['PASS'])
-            .setFontSize(18).setFontFamily('Trebuchet MS');
-
-        this.passBtn.on('pointerdown', this.passTurn, this);
-
-        this.togglePlayPassButtons();
-
     }
 
     update() {
@@ -235,7 +260,7 @@ export default class BigTwo extends Phaser.Scene {
         let selectedCards = this.hand.getSelectedCards();
 
          // If it can be played, send it to the server for further processing
-        if (gameRules.checkIfValidPlayHand(selectedCards)) {
+        if (this.gameRules.checkIfValidPlayHand(selectedCards)) {
             this.socket.emit('playedCards', selectedCards, this.socket);
             // Disable the hand
             this.hand.disableHand();
@@ -248,6 +273,7 @@ export default class BigTwo extends Phaser.Scene {
 
     /**
      * Remove the cards from the hand
+     * @param {Array} cards
      */
     removeCards(cards) {
         if (cards.length != 0) {
@@ -277,13 +303,12 @@ export default class BigTwo extends Phaser.Scene {
         else {
             this.playBtn.disableInteractive();
             this.playBtn.setColor('#7d7d7d');
-            this.passBtn.disableInteractive()
+            this.passBtn.disableInteractive();
             this.passBtn.setColor('#7d7d7d');
         }
     }
 
-    onConnect(playerNumber) {
-        this.playerNumber = playerNumber;
+    onConnect() {
         console.log('Connected!');
     }
 
@@ -292,13 +317,16 @@ export default class BigTwo extends Phaser.Scene {
      * @param {integer} playerNumber - The current turn's player number
      * @param {Array} lastPlayed - The cards that were last played by a player
      */
-    checkIfTurn(playerNumber, lastPlayed) {
-        if (playerNumber == this.playerNumber) {
+    checkIfTurn(id, lastPlayed) {
+        console.log(this.constructor.name);
+        console.log(`Received: ${id}, ${lastPlayed}`);
+        if (id == this.socket.id) {
             this.turn = true;
             // Enable the play and pass buttons
             this.togglePlayPassButtons();
+            console.log('It is your turn!');
         }
-        if (lastPlayed.length != 0) {
+        if (lastPlayed) {
             this.lastPlayed = lastPlayed;
         }
     }
@@ -308,6 +336,54 @@ export default class BigTwo extends Phaser.Scene {
      * @param {Array} cards - Array of cards the client has played
      */
     validPlay(cards) {
+        this.hand.findAndRemoveCards(cards);
+    }
 
+    /**
+     * Finds the hand of the given player number
+     * @param {integer} playerNumber - The player number we are looking for
+     * @returns {Hand} - The hand of the corresponding player number
+     */
+    getHand(playerNumber) {
+        for (let i = 0; i < this.hands.length; i++) {
+            if (this.hands[i].playerNumber == playerNumber) {
+                return this.hands[i];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * When another player plays cards, it will remove the cards from their hand.
+     * @param {Array} cards - An array of cards the player has played
+     * @param {string} id - The socket id of the player who played the card
+     * @param {integer} playerNumber - The player number of the other player
+     */
+    otherPlayedCards(cards, id, playerNumber) {
+
+        // Find the hand with the corresponding player number
+        let hand = this.getHand(playerNumber);
+        if (!hand) {
+            console.log('Player not found');
+            return;
+        }
+
+        if (hand.isEmpty()) {
+            console.log('Error: Hand is empty');
+            return;
+        }
+
+        // Remove the cards from their hand
+        let count = cards.length;
+        for (let i = 0; i < count; i++) {
+            let card = hand.pop();
+            console.log(card);
+        }
+
+        // Display the cards in the middle of the board
+
+
+        console.log(`${id} played ${cards}`);
+        console.log(`Success, cards removed from ${playerNumber}'s hand`);
     }
 }

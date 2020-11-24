@@ -7,6 +7,7 @@ export default class Rules {
 
     constructor(lastPlayed) {
         this.lastPlayed = lastPlayed;
+        this.turnNumber = 0;
     }
 
     /**
@@ -120,7 +121,7 @@ export default class Rules {
 
         let numCards = selectedCards.length;
         // If nothing was played last or everyone has passed
-        if (this.lastPlayed.length == 0) {
+        if (!this.lastPlayed) {
             return true;
         }
         // Same amount of cards are being played this round from the last
@@ -166,5 +167,13 @@ export default class Rules {
             }
         }
         return false;
+    }
+
+    /**
+     * Sets the turn number to be the given turn number
+     * @param {integer} number
+     */
+    setTurnNumber(number) {
+        this.turnNumber = number;
     }
 }

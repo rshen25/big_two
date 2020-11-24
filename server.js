@@ -30,7 +30,7 @@ function onConnect(socket) {
     io.to(socket.id).emit('playerNumber', GameManager.numberOfPlayers);
 
     // Deal cards to players when button is pressed by host
-    socket.on('startGame', startGame);
+    socket.on('dealCards', startGame);
 
     // When a card is played by the client
     socket.on('cardPlayed', cardPlayed);
@@ -61,7 +61,6 @@ function startGame() {
     let handSizes = [];
     // Send the hands to each player
     for (const id in GameManager.players) {
-        GameManager.players[id].hand.sortByValue(0, GameManager.players[id].hand.hand.length);
         io.to(id).emit('handDealt', GameManager.players[id].hand.hand);
         handSizes.push(GameManager.players[id].hand.hand.length);
     }
@@ -83,7 +82,6 @@ function startGame() {
  * @param {integer} playerNumber - The player number of the client
  */
 function cardPlayed(cards, socket, playerNumber) {
-
     // Call the Game Manager to see if the play is valid
     if (GameManager.playCards(cards, socket.id, playerNumber)) {
         // Send the play to all other players

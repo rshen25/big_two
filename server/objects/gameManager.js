@@ -65,10 +65,11 @@ module.exports = class GameManager {
         // Find the player who has the three of spades
         let firstPlayer = 0;
         for (const id in this.players) {
-            let card = this.players[id].hand.getCard(0);
-            if (card.value == 3 && card.suitRanking == 0) {
+            let card = this.players[id].getHand().getCard(0);
+            if (card.value == 3 && card.suitValue == 0) {
                 firstPlayer = this.players[id].playerNumber;
                 this.turnOrder.push(id);
+                console.log(`Player ${id} - ${firstPlayer} goes first`);
                 break;
             }
         }
@@ -79,7 +80,7 @@ module.exports = class GameManager {
             if (firstPlayer % 4 == 0) {
                 firstPlayer = 1;
             }
-            this.turnOrder.push(this.getPlayerID(firstPlayer));
+            this.turnOrder.push(this.getPlayerID(firstPlayer % 4));
         }
 
         this.currentTurn = this.turnOrder[0];
@@ -140,10 +141,15 @@ module.exports = class GameManager {
     dealCards() {
         this.resetDeck();
         let playersInRoom = [];
-        for (const property in this.players) {
-            playersInRoom.push(this.players[property]);
+        for (const id in this.players) {
+            playersInRoom.push(this.players[id]);
         }
         this.deck.deal(playersInRoom);
+
+        // Sort their hands by value after their hands have been dealt
+        for (const id in this.players) {
+            this.players[id].getHand().sortByValue();
+        }
 
         return this.players;
     }
