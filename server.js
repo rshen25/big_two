@@ -22,7 +22,7 @@ http.listen(3000, function () {
 /**
  * Adds the client to the list of players connected, adds the event listeners for 
  * the client
- * @param {Socket} socket - socket object of the connected player
+ * @param {Socket} socket : socket object of the connected player
  */
 function onConnect(socket) {
     console.log('A user connected: ' + socket.id);
@@ -33,7 +33,7 @@ function onConnect(socket) {
     socket.on('dealCards', startGame);
 
     // When a card is played by the client
-    socket.on('cardPlayed', cardPlayed);
+    socket.on('playedCards', cardPlayed);
 
     // When a client passes their turn
     socket.on('passTurn', playerPass);
@@ -44,7 +44,7 @@ function onConnect(socket) {
 
 /**
  * When a user disconnects, deletes the player and their id
- * @param {Socket} socket - socket object for the given player that has disconnected
+ * @param {Socket} socket : socket object for the given player that has disconnected
  */
 function onDisconnect(socket) {
     io.emit('otherPlayerDisconnect', socket.id);
@@ -78,20 +78,24 @@ function startGame() {
  * if so, it will remove the cards from the client's respective hand and send an 'ack'
  * letting the client know the play is valid and ending their turn. Also sends the
  * information to all the other players in the game
- * @param {Array} cards - An array of cards the client is intending to play
- * @param {integer} playerNumber - The player number of the client
+ * @param {Array} cards : An array of cards the client is intending to play
+ * @param {integer} playerNumber : The player number of the client
  */
-function cardPlayed(cards, socket, playerNumber) {
+function cardPlayed(cards, id, playerNumber, callback) {
+    console.log(cards);
     // Call the Game Manager to see if the play is valid
-    if (GameManager.playCards(cards, socket.id, playerNumber)) {
+    if (GameManager.playCards(cards, id, playerNumber)) {
         // Send the play to all other players
-        io.to(socket.id).emit('validPlay', cards);
-        io.emit('otherPlayedCards', cards, socket.id, playerNumber);
-        io.emit('nextTurn', GameManager.currentTurn, []);
+        callback(cards);
+        console.log('Emited valid play');
+        io.emit('otherPlayedCards', cards, id, playerNumber);
+        console.log('Emited other played cards');
+        io.emit('nextTurn', GameManager.currentTurn, cards);
+        console.log('Emited next turn');
     }
     else {
-        io.to(socket.id).emit('validPlay', []);
-        console.log(`Invalid play from ${socket.id}`);
+        callback([]);
+        console.log(`Invalid play from ${id}`);
     }
 }
 

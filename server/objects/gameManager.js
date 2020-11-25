@@ -35,7 +35,7 @@ module.exports = class GameManager {
 
     /**
      * Adds a player to the game
-     * @param {string} id - The player id
+     * @param {string} id : The player id
      */
     connectPlayer(id) {
         this.numberOfPlayers++;
@@ -46,7 +46,7 @@ module.exports = class GameManager {
 
     /**
      * Removes a player from the game
-     * @param {string} id - The player id
+     * @param {string} id : The player id
      */
     disconnectPlayer(id) {
         console.log('User disconnected.');
@@ -89,8 +89,8 @@ module.exports = class GameManager {
 
     /**
      * Searches among all the players in the game for their ID given their player number
-     * @param {integer} playerNumber - The player's number to look for (1 - 4)
-     * @returns {string} - The player id string, or null if not found
+     * @param {integer} playerNumber : The player's number to look for (1 - 4)
+     * @returns {string} : The player id string, or null if not found
      */
     getPlayerID(playerNumber) {
         for (const id in this.players) {
@@ -103,16 +103,19 @@ module.exports = class GameManager {
 
     /**
      * Attempts to plays the cards of the player
-     * @param {Array} cards - An array of card objects the player intends to play
-     * @param {string} id - The string id of the player
-     * @returns {boolean} - True if the cards were played
+     * @param {Array} cards : An array of card objects the player intends to play
+     * @param {string} id : The string id of the player
+     * @returns {boolean} : True if the cards were played
      */
     playCards(cards, id) {
         // Call the Game Manager to see if the play is valid
         if (this.checkIfValidPlayHand(cards)) {
-            this.incrementTurnCount();
-            this.currentTurn = this.getCurrentPlayerTurn();
-            return this.players[id].playCards(cards);
+            if (this.players[id].playCards(cards)) {
+                this.setPreviouslyPlayed(cards, this.turnNumber);
+                this.incrementTurnCount();
+                this.currentTurn = this.getCurrentPlayerTurn();
+                return true;
+            }
         }
         else {
             return false;
@@ -121,7 +124,7 @@ module.exports = class GameManager {
 
     /**
      *  Increments the turn to the next player when a player passes
-     *  @returns {integer} - The player number of the new current turn's player 
+     *  @returns {integer} : The player number of the new current turn's player 
      */
     playPass() {
         this.incrementTurnCount();
@@ -182,9 +185,10 @@ module.exports = class GameManager {
 
     /**
      * Gets the current player's turn id
-     * @returns {string} - The player id of the current turn's player
+     * @returns {string} : The player id of the current turn's player
      */
     getCurrentPlayerTurn() {
+        console.log(this.turnNumber % this.numberOfPlayers);
         return this.turnOrder[this.turnNumber % this.numberOfPlayers];
     }
 
@@ -202,8 +206,8 @@ module.exports = class GameManager {
 
     /**
      * Checks to see whether the cards a player intends to play is a pair or not
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if it is a pair, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if it is a pair, false otherwise
      */
     isPair(cardsToPlay) {
         if (cardsToPlay.length != 2) {
@@ -219,8 +223,8 @@ module.exports = class GameManager {
 
     /**
      * Checks to see whether the cards a player intends to play is a three of a kind or not
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if its a triple, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if its a triple, false otherwise
      */
     isTriple(cardsToPlay) {
         let numCards = cardsToPlay.length;
@@ -237,12 +241,12 @@ module.exports = class GameManager {
 
     /**
      * Checks to see whether the cards a player intends to play is a straight or not
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if it is a straight, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if it is a straight, false otherwise
      */
     isStraight(cardsToPlay) {
         for (let i = 0; i < cardsToPlay.length - 1; i++) {
-            if (cardsToPlay[i + 1].value != cardsToPlay[i + 1].value + 1) {
+            if (cardsToPlay[i].value != cardsToPlay[i + 1].value + 1) {
                 return false;
             }
         }
@@ -251,8 +255,8 @@ module.exports = class GameManager {
 
     /**
      * Checks to see if the cards a player intends to play is a four of a kind or not
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if the cards to be played are four of a kind, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if the cards to be played are four of a kind, false otherwise
      */
     isQuads(cardsToPlay) {
         if (cardsToPlay.length != 4) {
@@ -271,8 +275,8 @@ module.exports = class GameManager {
     /**
      * Checks to see if the hand is a 'Bomb' - a set of at least three or more
      * pairs in sequential order
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if the cards to be played is a bomb, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if the cards to be played is a bomb, false otherwise
      */
     isBomb(cardsToPlay) {
         let num = cardsToPlay.length;
@@ -298,37 +302,45 @@ module.exports = class GameManager {
 
     /**
      * Checks if the current cards selected to be played is a valid play
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if valid, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if valid, false otherwise
      */
     checkIfValidPlayHand(selectedCards) {
         if (this.turnNumber == 0 &&
             selectedCards[0].value != 3 &&
             selectedCards[0].suitValue != 0) {
+            console.log(selectedCards[0]);
             console.log('Must include 3 of Spades');
             return false;
         }
 
         let numCards = selectedCards.length;
         // If nothing was played last or everyone has passed
-        if (this.lastPlayed.length == 0) {
-            return true;
+        if (!this.lastPlayed) {
+            console.log('New Play');
+            if (numCards == 1 || this.isPair(selectedCards) || this.isTriple(selectedCards) ||
+                this.isQuads(selectedCards) || this.isStraight(selectedCards) ||
+                this.isBomb(selectedCards)) {
+                console.log('Returned True on new play');
+                return true;
+            }
         }
         // Same amount of cards are being played this round from the last
         if (numCards == this.lastPlayed.length) {
             if (numCards == 1) {
-                if (selectedCards[0].compareTo(lastPlayed[0])) {
+                if (this.compareCards(selectedCards[0], lastPlayed[0])) {
                     return true;
                 }
             }
             if (this.isPair(selectedCards) || this.isTriple(selectedCards) ||
                 this.isQuads(selectedCards)) {
-                if (selectedCards[1].compareTo(lastPlayed[1])) {
+                if (this.compareCards(selectedCards[1], lastPlayed[1])) {
                     return true;
                 }
             }
             if (this.isStraight(selectedCards) || this.isBomb(selectedCards)) {
-                if (selectedCards[numCards - 1].compareTo(this.lastPlayed[numCards - 1])) {
+                if (this.compareCards(selectedCards[numCards - 1],
+                    this.lastPlayed[numCards - 1])) {
                     return true;
                 }
             }
@@ -357,5 +369,33 @@ module.exports = class GameManager {
             }
         }
         return false;
+    }
+
+    /**
+     * Compares the current card with another card and sees which one is higher, returns true
+     * if the current card is higher, false otherwise
+     * @param {Card} a : The first card we want to compare
+     * @param {Card} b : The second card object to compare against
+     * @returns {boolean} : Returns true if card is higher than other card, false otherwise
+     */
+    compareCards(a, b) {
+        if (a.value < b.value) {
+            return false;
+        }
+        if (a.value == b.value && a.suitValue < b.suitValue) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Sets the previously played cards by a player and the turn number to be the set 
+     * of cards and number given
+     * @param {Array} cards : An array of cards representing the last play
+     * @param {integer} turnNumber : The turn number of which the play was made
+     */
+    setPreviouslyPlayed(cards, turnNumber) {
+        this.previouslyPlayed = cards;
+        this.previouslyPlayedTurn = turnNumber;
     }
 }

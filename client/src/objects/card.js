@@ -5,14 +5,14 @@
 export default class Card extends Phaser.GameObjects.Image{
     constructor(scene, x, y, texture, frame, value, suit, suitValue) {
         super(scene, x, y, texture, frame);
-        scene.add.existing(this);
-        this.setInteractive();
-        this.setScale(0.45, 0.45);
         this.value = value;
         this.suit = suit;
         this.suitValue = suitValue;
         this.isSelected = false;
 
+        scene.add.existing(this);
+        this.setInteractive();
+        this.setScale(0.45, 0.45);
         this.on('pointerdown', this.onClick,this); 
     }
 
@@ -46,5 +46,15 @@ export default class Card extends Phaser.GameObjects.Image{
             return false;
         }
         return true;
+    }
+
+    stringify() {
+        let data = {
+            value: this.value,
+            suit: this.suit,
+            suitValue: this.suitValue
+        };
+
+        return data;
     }
 }

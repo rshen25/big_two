@@ -51,12 +51,12 @@ module.exports = class Deck {
 
     /**
      * Deals out the entire deck of cards to each player in the game.
-     * @param {Player} players - An array of all the players in the game.
+     * @param {Player} players : An array of all the players in the game.
      */
     deal(players) {
         let player = 0;
         while (this.deck.length > 0) {
-            players[player].hand.addCard(this.deck.pop());
+            players[player].addCardToHand(this.deck.pop());
             player = (player + 1) % players.length;
         }
     }

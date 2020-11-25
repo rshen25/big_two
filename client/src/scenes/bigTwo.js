@@ -116,7 +116,13 @@ export default class BigTwo extends Phaser.Scene {
             console.log(`User ${id} left.`);
         });
 
-        this.socket.on('otherPlayedCards', this.otherPlayedCards, this);
+        this.socket.on('otherPlayedCards', (cards, id, playerNumber) => {
+            this.otherPlayedCards(cards, id, playerNumber);
+        });
+
+        this.socket.on('playedCards', (response) => {
+            this.validPlay(response);
+        });
 
         this.socket.on('playerNumber', function (playerNumber) {
             self.playerNumber = playerNumber;
@@ -137,12 +143,8 @@ export default class BigTwo extends Phaser.Scene {
 
         this.socket.on('nextTurn', (id, lastPlayed) => { this.checkIfTurn(id, lastPlayed); });
 
-        this.socket.on('validPlay', this.validPlay);
-
-
         // Get the player's hand from the server and add the cards to the hand and 
         // draw them onto the scene 
-
         this.socket.on('handDealt', function (data) {
             console.log(self.hand);
             console.log(data);
@@ -261,7 +263,18 @@ export default class BigTwo extends Phaser.Scene {
 
          // If it can be played, send it to the server for further processing
         if (this.gameRules.checkIfValidPlayHand(selectedCards)) {
-            this.socket.emit('playedCards', selectedCards, this.socket);
+            // Prepare the card data to be sent to server
+            let cards = [];
+
+            for (let i = 0; i < selectedCards.length; i++) {
+                cards.push(selectedCards[i].stringify());
+            }
+
+            this.socket.emit('playedCards', cards, this.socket.id, this.playerNumber,
+                (response) => {
+                    this.validPlay(response);
+                });
+            console.log('emited played cards to server');
             // Disable the hand
             this.hand.disableHand();
         }
@@ -318,8 +331,8 @@ export default class BigTwo extends Phaser.Scene {
      * @param {Array} lastPlayed - The cards that were last played by a player
      */
     checkIfTurn(id, lastPlayed) {
-        console.log(this.constructor.name);
         console.log(`Received: ${id}, ${lastPlayed}`);
+        this.gameRules.incrementTurn();
         if (id == this.socket.id) {
             this.turn = true;
             // Enable the play and pass buttons
@@ -336,7 +349,16 @@ export default class BigTwo extends Phaser.Scene {
      * @param {Array} cards - Array of cards the client has played
      */
     validPlay(cards) {
-        this.hand.findAndRemoveCards(cards);
+        if (cards) {
+            console.log('valid play called');
+            this.removeCards(cards);
+            console.log('cards found and removed');
+            this.turn = false;
+            this.togglePlayPassButtons();
+        }
+        else {
+            this.hand.enableHand();
+        }
     }
 
     /**
@@ -360,7 +382,9 @@ export default class BigTwo extends Phaser.Scene {
      * @param {integer} playerNumber - The player number of the other player
      */
     otherPlayedCards(cards, id, playerNumber) {
-
+        if (playerNumber == this.playerNumber) {
+            return;
+        }
         // Find the hand with the corresponding player number
         let hand = this.getHand(playerNumber);
         if (!hand) {

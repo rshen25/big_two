@@ -49,13 +49,15 @@ export default class Hand {
      * @param {Card} card - The card to remove from the hand
      * @returns {boolean} - True if the card was found in the hand and removed
      */
-    removeCard(card) {
-        let index = this.findCard(card);
-        if (index == -1) {
+    removeCard(index) {
+        if (!this.hand) {
             return false;
         }
-        this.hand.splice(index, 1);
-        return true;
+        if (index < this.hand.length && index >= 0) {
+            this.hand.splice(index, 1);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -75,20 +77,34 @@ export default class Hand {
      */
     findCard(card) {
         let i = this.hand.length;
-        let index = this.hand.length / 2;
+        let index = Math.floor(this.hand.length / 2);
         while (i > 0) {
             if (this.hand[index].value == card.value) {
-                return index;
+                while (this.hand[index].value == card.value) {
+                    if (card.suitValue < this.hand[index].suitValue) {
+                        index--;
+                        continue;
+                    }
+                    if (card.suitValue > this.hand[index].suitValue) {
+                        index++;
+                        continue;
+                    }
+                    if (this.hand[index].suitValue == card.suitValue) {
+                        console.log(`Found ${card.value}`);
+                        return index;
+                    }
+                }
+                return -1;
             }
             else {
                 if (card.value < this.hand[index].value) {
-                    index = index / 2;
+                    index = Math.floor(index / 2);
                 }
                 else {
-                    index += (index / 2);
+                    index += Math.floor((this.hand.length - index) / 2);
                 }
             }
-            i = i / 2;
+            i = Math.floor(i / 2);
         }
         return -1;
     }
@@ -108,7 +124,7 @@ export default class Hand {
                 continue;
             }
             else {
-                cardsFound.push[index];
+                cardsFound.push(index);
             }
         }
         if (cardsFound.length != cards.length) {
@@ -198,7 +214,7 @@ export default class Hand {
      */
     disableHand() {
         for (let i = 0; i < this.hand.length; i++) {
-            this.hand[i].disableInterative();
+            this.hand[i].disableInteractive();
         }
     }
 

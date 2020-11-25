@@ -29,7 +29,7 @@ export default class Rules {
 
     /**
      * Checks to see whether the cards a player intends to play is a three of a kind or not
-     * @param {any} cardsToPlay - An array of card objects the player intends to play
+     * @param {Array} cardsToPlay - An array of card objects the player intends to play
      * @returns {boolean} - True if its a triple, false otherwise
      */
     isTriple(cardsToPlay) {
@@ -51,8 +51,8 @@ export default class Rules {
      * @returns {boolean} - True if it is a straight, false otherwise
      */
     isStraight(cardsToPlay) {
-        for (let i = 0; i < cardsToPlay.length - 1; i++) {
-            if (cardsToPlay[i + 1].value != cardsToPlay[i + 1].value + 1) {
+        for (let i = start; i < cardsToPlay.length - 1; i++) {
+            if (cardsToPlay[i].value != cardsToPlay[i + 1].value + 1) {
                 return false;
             }
         }
@@ -90,7 +90,7 @@ export default class Rules {
             return false;
         }
         else {
-            for (let i = 0; i < num; i += 2) {
+            for (let i = 0; i < num; i = i + 2) {
                 // Check if its a pair
                 if (cardsToPlay[i] != cardsToPlay[i + 1]) {
                     return false;
@@ -122,10 +122,17 @@ export default class Rules {
         let numCards = selectedCards.length;
         // If nothing was played last or everyone has passed
         if (!this.lastPlayed) {
-            return true;
+            console.log('New Play');
+            if (numCards == 1 || this.isPair(selectedCards) || this.isTriple(selectedCards) ||
+                this.isQuads(selectedCards) || this.isStraight(selectedCards) ||
+                this.isBomb(selectedCards)) {
+                console.log('Returned True on new play');
+                return true;
+            }
         }
         // Same amount of cards are being played this round from the last
         if (numCards == this.lastPlayed.length) {
+            console.log('old play');
             if (numCards == 1) {
                 if (selectedCards[0].compareTo(lastPlayed[0])) {
                     return true;
@@ -145,17 +152,17 @@ export default class Rules {
         }
         else {
             // If a single two was played and the current play is to play a 'Bomb'
-            if (this.lastPlayed[0] == 2 &&
+            if (this.lastPlayed[0] == 17 &&
                 (this.isQuads(selectedCards) || this.isBomb(selectedCards))) {
                 return true;
             } 
             // If there were pair twos played and the current play is a 'Bomb'
-            if (this.isPair(this.lastPlayed) && selectedCards[0] == 2 &&
+            if (this.isPair(this.lastPlayed) && selectedCards[0] == 17 &&
                 this.isBomb(selectedCards) && numCards >= 8) {
                 return true;
             }
             // If there were triple twos played and the current play is a 'Bomb'
-            if (this.isTriple(this.lastPlayed) && selectedCards[0] == 2 &&
+            if (this.isTriple(this.lastPlayed) && selectedCards[0].value == 17 &&
                 this.isBomb(selectedCards) && numCards >= 10) {
                 return true;
             }
@@ -167,6 +174,13 @@ export default class Rules {
             }
         }
         return false;
+    }
+
+    /**
+     * Increases the turn count by 1 
+     */
+    incrementTurn() {
+        this.turnNumber++;
     }
 
     /**
