@@ -5,6 +5,7 @@ import io from 'socket.io-client';
 import Card from '../objects/card.js';
 import Hand from '../objects/hand.js';
 import Rules from '../objects/gameRules.js';
+import PlayArea from '../objects/playArea.js';
 
 export default class BigTwo extends Phaser.Scene {
     constructor() {
@@ -15,7 +16,6 @@ export default class BigTwo extends Phaser.Scene {
         this.playerNumber = -1;
         this.otherPlayers = 0;
         this.cardsToBePlayed = [];
-        this.lastPlayed = [];
         this.westHand = null;
         this.northHand = null;
         this.eastHand = null;
@@ -41,6 +41,10 @@ export default class BigTwo extends Phaser.Scene {
         let self = this;
         let width = this.scale.width;
         let height = this.scale.height;
+
+        // Create play area
+        this.playArea = new PlayArea(this, width / 2, height / 2,
+            width / 2 - 100, height / 2 - 100);
 
         // Create the hands
         this.hand = new Hand(width / 2, height - 50, width * 0.75, 100);
@@ -70,7 +74,7 @@ export default class BigTwo extends Phaser.Scene {
         // Create a deal cards button to start dealing cards to the players
         this.dealText = this.add.text(width / 2, height / 2, ['DEAL CARDS'])
             .setFontSize(18).setFontFamily('Trebuchet MS')
-            .setColor('#00ffff').setInteractive();
+            .setColor('#00ffff');
 
         this.dealText.on('pointerdown', function () {
             self.socket.emit('dealCards');
@@ -104,6 +108,9 @@ export default class BigTwo extends Phaser.Scene {
 
         this.socket.on('playerNumber', function (playerNumber) {
             self.playerNumber = playerNumber;
+            if (self.playerNumber == 1) {
+                self.dealText.setInteractive();
+            }
         });
 
         this.socket.on('otherPlayerJoined', function (id) {
@@ -129,8 +136,8 @@ export default class BigTwo extends Phaser.Scene {
             let pNumber = playerNumber;
             let players = [];
             for (let i = 1; i < 4; i++) {
-                pNumber += i;
-                if (pNumber % 4 == 0) {
+                pNumber++;
+                if (pNumber % 5 == 0) {
                     pNumber = 1;
                 }
                 players.push(pNumber);
@@ -151,26 +158,7 @@ export default class BigTwo extends Phaser.Scene {
             let spriteName;
             let startX = self.hand.x - (self.hand.width / 2) + 30;
             for (let i = 0; i < data.length; i++) {
-                switch (data[i].value) {
-                    case 11:
-                        spriteName = `card${data[i].suit}J.png`;
-                        break;
-                    case 12:
-                        spriteName = `card${data[i].suit}Q.png`;
-                        break;
-                    case 13:
-                        spriteName = `card${data[i].suit}K.png`;
-                        break;
-                    case 14:
-                        spriteName = `card${data[i].suit}A.png`;
-                        break;
-                    case 17:
-                        spriteName = `card${data[i].suit}2.png`;
-                        break;
-                    default:
-                        spriteName = `card${data[i].suit}${data[i].value}.png`;
-                        break;
-                }
+                spriteName = self.getSpriteNameOfCard(data[i].value, data[i].suit);
 
                 let card = new Card(self,
                     (startX) + (i * (self.hand.width / (data.length + 1))),
@@ -300,7 +288,7 @@ export default class BigTwo extends Phaser.Scene {
      */
     passTurn() {
         this.turn = false;
-        this.socket.emit('passTurn', this.socket);
+        this.socket.emit('passTurn', this.socket.id, this.playerNumber);
     }
 
     /**
@@ -332,15 +320,18 @@ export default class BigTwo extends Phaser.Scene {
      */
     checkIfTurn(id, lastPlayed) {
         console.log(`Received: ${id}, ${lastPlayed}`);
+        if (lastPlayed) {
+            this.gameRules.setLastPlayed(lastPlayed);
+        }
         this.gameRules.incrementTurn();
+
+        // TODO: check for passing
+
         if (id == this.socket.id) {
             this.turn = true;
             // Enable the play and pass buttons
             this.togglePlayPassButtons();
             console.log('It is your turn!');
-        }
-        if (lastPlayed) {
-            this.lastPlayed = lastPlayed;
         }
     }
 
@@ -349,15 +340,25 @@ export default class BigTwo extends Phaser.Scene {
      * @param {Array} cards - Array of cards the client has played
      */
     validPlay(cards) {
-        if (cards) {
+        let cardsToMove = this.hand.getSelectedCards();
+        console.log(cards);
+        if (cards === undefined || cards.length == 0) {
+            this.hand.enableHand();
+        }
+        else {
+            this.gameRules.setLastPlayed(cards);
+            this.gameRules.incrementTurn();
             console.log('valid play called');
             this.removeCards(cards);
             console.log('cards found and removed');
+
+            // Add the cards to the play area
+            this.playArea.addCards(cardsToMove);
+            console.log(this.playArea.getLastPlayed());
+            console.log(this.hand.getHand());
+
             this.turn = false;
             this.togglePlayPassButtons();
-        }
-        else {
-            this.hand.enableHand();
         }
     }
 
@@ -388,7 +389,7 @@ export default class BigTwo extends Phaser.Scene {
         // Find the hand with the corresponding player number
         let hand = this.getHand(playerNumber);
         if (!hand) {
-            console.log('Player not found');
+            console.log(`Player ${playerNumber} not found`);
             return;
         }
 
@@ -400,14 +401,56 @@ export default class BigTwo extends Phaser.Scene {
         // Remove the cards from their hand
         let count = cards.length;
         for (let i = 0; i < count; i++) {
-            let card = hand.pop();
-            console.log(card);
+            hand.pop().destroy();
         }
 
         // Display the cards in the middle of the board
-
+        if (cards) {
+            let cardsToShow = [];
+            // Create the new cards
+            for (let i = 0; i < cards.length; i++) {
+                let spriteName = this.getSpriteNameOfCard(cards[i].value, cards[i].suit);
+                cardsToShow.push(new Card(this, 0, 0, 'playingCards',
+                    spriteName,
+                    cards[i].value,
+                    cards[i].suit,
+                    cards[i].suitValue).disableInteractive());
+            }
+            this.playArea.addCards(cardsToShow);
+        }
 
         console.log(`${id} played ${cards}`);
         console.log(`Success, cards removed from ${playerNumber}'s hand`);
+    }
+
+    /**
+     * Determines the name of the card sprite used to show the card in the scene 
+     * @param {integer} value : The value of the card based on the game rules
+     * @param {string} suit : The suit of the card
+     * @returns {string} : The name of the sprite or image file
+     */
+    getSpriteNameOfCard(value, suit) {
+        let spriteName;
+        switch (value) {
+            case 11:
+                spriteName = `card${suit}J.png`;
+                break;
+            case 12:
+                spriteName = `card${suit}Q.png`;
+                break;
+            case 13:
+                spriteName = `card${suit}K.png`;
+                break;
+            case 14:
+                spriteName = `card${suit}A.png`;
+                break;
+            case 17:
+                spriteName = `card${suit}2.png`;
+                break;
+            default:
+                spriteName = `card${suit}${value}.png`;
+                break;
+        }
+        return spriteName;
     }
 }

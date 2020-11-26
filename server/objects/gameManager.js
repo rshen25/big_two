@@ -24,8 +24,8 @@ module.exports = class GameManager {
         this.numberOfPlayers = 0;           // The number of players in the game
         this.players = {};                  // Players object to hold the players
 
-        this.previouslyPlayedTurn = 0;      // The turn where the last play was made
-        this.previouslyPlayed = [];         // The cards that were played last
+        this.lastPlayedTurn = 0;      // The turn where the last play was made
+        this.lastPlayed = [];         // The cards that were played last
         this.currentTurn = -1;              // The current player's id
         this.turnOrder = [];                // The order which players take their turns
         this.turnNumber = 0;                // The number of turns that have elapsed
@@ -77,10 +77,10 @@ module.exports = class GameManager {
         // Generate the remainder of the players
         for (let i = 1; i < 4; i++) {
             firstPlayer++;
-            if (firstPlayer % 4 == 0) {
+            if (firstPlayer % 5 == 0) {
                 firstPlayer = 1;
             }
-            this.turnOrder.push(this.getPlayerID(firstPlayer % 4));
+            this.turnOrder.push(this.getPlayerID(firstPlayer % 5));
         }
 
         this.currentTurn = this.turnOrder[0];
@@ -131,11 +131,11 @@ module.exports = class GameManager {
         this.currentTurn = this.getCurrentPlayerTurn();
         // If every other player passes their turn and it goes back to the last player
         // to play their cards, we reset last played so the player make a new play
-        if (this.turnOrder[this.previouslyPlayedTurn % this.numberOfPlayers] == nextPlayerTurn) {
+        if (this.turnOrder[this.previouslyPlayedTurn % this.numberOfPlayers] == this.currentTurn) {
             this.lastPlayed = [];
         }
 
-        return players[this.currentTurn].playerNumber;
+        return this.currentTurn;
     }
 
     /**
@@ -316,7 +316,7 @@ module.exports = class GameManager {
 
         let numCards = selectedCards.length;
         // If nothing was played last or everyone has passed
-        if (!this.lastPlayed) {
+        if (!this.lastPlayed || this.lastPlayed.length == 0) {
             console.log('New Play');
             if (numCards == 1 || this.isPair(selectedCards) || this.isTriple(selectedCards) ||
                 this.isQuads(selectedCards) || this.isStraight(selectedCards) ||
@@ -328,13 +328,13 @@ module.exports = class GameManager {
         // Same amount of cards are being played this round from the last
         if (numCards == this.lastPlayed.length) {
             if (numCards == 1) {
-                if (this.compareCards(selectedCards[0], lastPlayed[0])) {
+                if (this.compareCards(selectedCards[0], this.lastPlayed[0])) {
                     return true;
                 }
             }
             if (this.isPair(selectedCards) || this.isTriple(selectedCards) ||
                 this.isQuads(selectedCards)) {
-                if (this.compareCards(selectedCards[1], lastPlayed[1])) {
+                if (this.compareCards(selectedCards[1], this.lastPlayed[1])) {
                     return true;
                 }
             }
@@ -395,7 +395,7 @@ module.exports = class GameManager {
      * @param {integer} turnNumber : The turn number of which the play was made
      */
     setPreviouslyPlayed(cards, turnNumber) {
-        this.previouslyPlayed = cards;
-        this.previouslyPlayedTurn = turnNumber;
+        this.lastPlayed = cards;
+        this.lastPlayedTurn = turnNumber;
     }
 }

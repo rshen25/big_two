@@ -1,8 +1,7 @@
 /*
- *
+ * The play area of the cards, when cards are played they are moved to the play area and this holds the cards
+ * that were last played. Adding cards to the play area will show them in the given scene.
  */
-
-import Card from './card.js';
 
 export default class PlayArea {
     constructor(scene, x, y, width, height) {
@@ -14,12 +13,31 @@ export default class PlayArea {
         this.lastPlayed = [];
     }
 
+    /**
+     * Adds cards to the play area, and sets the last played to be the cards added
+     * @param {Array} cards : The set of cards to add to the play area
+     */
     addCards(cards) {
+        this.deleteLastPlayed();
         let numCards = cards.length;
+        let startX = this.x - (this.width / 2);
         for (let i = 0; i < numCards; i++) {
+            cards[i].setX(startX + (20 * i));
+            cards[i].setY(this.y);
             this.lastPlayed.push(cards[i]);
         }
         return true;
+    }
+
+    /**
+     * Deletes the last played cards
+     */
+    deleteLastPlayed() {
+        if (this.lastPlayed || this.lastPlayed.length != 0) {
+            for (let i = 0; i < this.lastPlayed.length; i++) {
+                this.lastPlayed[i].destroy(this.scene);
+            }
+        }
     }
 
     /**

@@ -54,6 +54,7 @@ export default class Hand {
             return false;
         }
         if (index < this.hand.length && index >= 0) {
+            delete this.hand[index];
             this.hand.splice(index, 1);
             return true;
         }
@@ -76,9 +77,10 @@ export default class Hand {
      * @returns {integer} - Index of the card in hand if it exists, -1 otherwise
      */
     findCard(card) {
-        let i = this.hand.length;
-        let index = Math.floor(this.hand.length / 2);
-        while (i > 0) {
+        let l = 0;
+        let h = this.hand.length - 1;
+        while (l <= h) {
+            let index = Math.floor(l + ((h - l) / 2));
             if (this.hand[index].value == card.value) {
                 while (this.hand[index].value == card.value) {
                     if (card.suitValue < this.hand[index].suitValue) {
@@ -98,13 +100,12 @@ export default class Hand {
             }
             else {
                 if (card.value < this.hand[index].value) {
-                    index = Math.floor(index / 2);
+                    h = index - 1;
                 }
                 else {
-                    index += Math.floor((this.hand.length - index) / 2);
+                    l = index + 1;
                 }
             }
-            i = Math.floor(i / 2);
         }
         return -1;
     }
@@ -235,5 +236,13 @@ export default class Hand {
      */
     pop() {
         return this.hand.pop();
+    }
+
+    /**
+     * Returns the hand
+     * @returns {Array} : An array of cards representing the hand
+     */
+    getHand() {
+        return this.hand;
     }
 }

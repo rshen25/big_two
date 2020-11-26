@@ -7,6 +7,7 @@ export default class Rules {
 
     constructor(lastPlayed) {
         this.lastPlayed = lastPlayed;
+        this.lastPlayedTurn = 0;
         this.turnNumber = 0;
     }
 
@@ -51,7 +52,7 @@ export default class Rules {
      * @returns {boolean} - True if it is a straight, false otherwise
      */
     isStraight(cardsToPlay) {
-        for (let i = start; i < cardsToPlay.length - 1; i++) {
+        for (let i = 0; i < cardsToPlay.length - 1; i++) {
             if (cardsToPlay[i].value != cardsToPlay[i + 1].value + 1) {
                 return false;
             }
@@ -121,7 +122,7 @@ export default class Rules {
 
         let numCards = selectedCards.length;
         // If nothing was played last or everyone has passed
-        if (!this.lastPlayed) {
+        if (!this.lastPlayed || this.lastPlayed.length == 0) {
             console.log('New Play');
             if (numCards == 1 || this.isPair(selectedCards) || this.isTriple(selectedCards) ||
                 this.isQuads(selectedCards) || this.isStraight(selectedCards) ||
@@ -134,13 +135,13 @@ export default class Rules {
         if (numCards == this.lastPlayed.length) {
             console.log('old play');
             if (numCards == 1) {
-                if (selectedCards[0].compareTo(lastPlayed[0])) {
+                if (selectedCards[0].compareTo(this.lastPlayed[0])) {
                     return true;
                 }
             }
             if (this.isPair(selectedCards) || this.isTriple(selectedCards) ||
                 this.isQuads(selectedCards)) {
-                if (selectedCards[1].compareTo(lastPlayed[1])) {
+                if (selectedCards[1].compareTo(this.lastPlayed[1])) {
                     return true;
                 }
             }
@@ -185,9 +186,18 @@ export default class Rules {
 
     /**
      * Sets the turn number to be the given turn number
-     * @param {integer} number
+     * @param {integer} number - The turn number to set to
      */
     setTurnNumber(number) {
         this.turnNumber = number;
+    }
+
+    /**
+     * Sets the last played cards
+     * @param {Array} lastPlayed - An array of cards which were played last
+     */
+    setLastPlayed(lastPlayed) {
+        this.lastPlayed = lastPlayed;
+        this.lastPlayedTurn = this.turnNumber;
     }
 }

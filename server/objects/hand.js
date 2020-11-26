@@ -60,9 +60,10 @@ module.exports = class Hand {
      * @returns {integer} : Index of the card in hand if it exists, -1 otherwise
      */
     findCard(card) {
-        let i = this.hand.length;
-        let index = Math.floor(this.hand.length / 2);
-        while (i > 0) {
+        let l = 0;
+        let h = this.hand.length - 1;
+        while (l <= h) {
+            let index = Math.floor(l + ((h - l) / 2));
             if (this.hand[index].value == card.value) {
                 while (this.hand[index].value == card.value) {
                     if (card.suitValue < this.hand[index].suitValue) {
@@ -82,13 +83,12 @@ module.exports = class Hand {
             }
             else {
                 if (card.value < this.hand[index].value) {
-                    index = Math.floor(index / 2);
+                    h = index;
                 }
                 else {
-                    index += Math.floor((this.hand.length - index) / 2);
+                    l = index;
                 }
             }
-            i = Math.floor(i / 2);
         }
         return -1;
     }
