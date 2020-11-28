@@ -75,7 +75,6 @@ module.exports = class Hand {
                         continue;
                     }
                     if (this.hand[index].suitValue == card.suitValue) {
-                        console.log(`Found ${card.value}`);
                         return index;
                     }
                 }
@@ -83,10 +82,10 @@ module.exports = class Hand {
             }
             else {
                 if (card.value < this.hand[index].value) {
-                    h = index;
+                    h = index - 1;
                 }
                 else {
-                    l = index;
+                    l = index + 1;
                 }
             }
         }
@@ -184,5 +183,21 @@ module.exports = class Hand {
      */
     sortBySuit() {
 
+    }
+
+    /**
+     * Checks to see if the hand is empty
+     * @returns {boolean} : True if the hand is empty, false otherwise
+     */
+    isEmpty() {
+        return (this.hand || this.hand.length == 0);
+    }
+
+    /**
+     * Returns the hand
+     * @returns {Array} : An array of cards representing the hand
+     */
+    getHand() {
+        return this.hand;
     }
 }

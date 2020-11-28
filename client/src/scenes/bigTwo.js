@@ -74,7 +74,7 @@ export default class BigTwo extends Phaser.Scene {
         // Create a deal cards button to start dealing cards to the players
         this.dealText = this.add.text(width / 2, height / 2, ['DEAL CARDS'])
             .setFontSize(18).setFontFamily('Trebuchet MS')
-            .setColor('#00ffff');
+            .setColor('#00ffff').setVisible(false);
 
         this.dealText.on('pointerdown', function () {
             self.socket.emit('dealCards');
@@ -109,6 +109,7 @@ export default class BigTwo extends Phaser.Scene {
         this.socket.on('playerNumber', function (playerNumber) {
             self.playerNumber = playerNumber;
             if (self.playerNumber == 1) {
+                self.dealText.setVisible(true);
                 self.dealText.setInteractive();
             }
         });
@@ -225,6 +226,11 @@ export default class BigTwo extends Phaser.Scene {
                 }
             }
         });
+
+        // When the client has finished emptying their hand
+        this.socket.on('hasWon', (place, score) => { this.hasWon(place, score) });
+
+        this.socket.on('gameOver', (scores) => { this.gameOver(scores) });
     }
 
     update() {
@@ -234,7 +240,7 @@ export default class BigTwo extends Phaser.Scene {
     /**
      * Sends a message to the server to make it deal the deck of cards to all players in
      * the current game
-     * @param {Socket} socket - The socket information of this client
+     * @param {Socket} socket : The socket information of this client
      */
     dealCards(socket) {
         socket.emit('startGame');
@@ -289,6 +295,7 @@ export default class BigTwo extends Phaser.Scene {
     passTurn() {
         this.turn = false;
         this.socket.emit('passTurn', this.socket.id, this.playerNumber);
+        this.togglePlayPassButtons();
     }
 
     /**
@@ -315,8 +322,8 @@ export default class BigTwo extends Phaser.Scene {
 
     /**
      * Checks if the current turn is the clients
-     * @param {integer} playerNumber - The current turn's player number
-     * @param {Array} lastPlayed - The cards that were last played by a player
+     * @param {integer} playerNumber : The current turn's player number
+     * @param {Array} lastPlayed : The cards that were last played by a player
      */
     checkIfTurn(id, lastPlayed) {
         console.log(`Received: ${id}, ${lastPlayed}`);
@@ -337,7 +344,7 @@ export default class BigTwo extends Phaser.Scene {
 
     /**
      * Removes the cards from the client's last play from its hand
-     * @param {Array} cards - Array of cards the client has played
+     * @param {Array} cards : Array of cards the client has played
      */
     validPlay(cards) {
         let cardsToMove = this.hand.getSelectedCards();
@@ -357,6 +364,13 @@ export default class BigTwo extends Phaser.Scene {
             console.log(this.playArea.getLastPlayed());
             console.log(this.hand.getHand());
 
+/*            // Check if won
+            if (this.checkWinCondition()) {
+                this.socket.emit('hasWon', (response, scores) => {
+                    this.hasWon(response, scores);
+                });
+            }*/
+
             this.turn = false;
             this.togglePlayPassButtons();
         }
@@ -364,8 +378,8 @@ export default class BigTwo extends Phaser.Scene {
 
     /**
      * Finds the hand of the given player number
-     * @param {integer} playerNumber - The player number we are looking for
-     * @returns {Hand} - The hand of the corresponding player number
+     * @param {integer} playerNumber : The player number we are looking for
+     * @returns {Hand} : The hand of the corresponding player number
      */
     getHand(playerNumber) {
         for (let i = 0; i < this.hands.length; i++) {
@@ -378,9 +392,9 @@ export default class BigTwo extends Phaser.Scene {
 
     /**
      * When another player plays cards, it will remove the cards from their hand.
-     * @param {Array} cards - An array of cards the player has played
-     * @param {string} id - The socket id of the player who played the card
-     * @param {integer} playerNumber - The player number of the other player
+     * @param {Array} cards : An array of cards the player has played
+     * @param {string} id : The socket id of the player who played the card
+     * @param {integer} playerNumber : The player number of the other player
      */
     otherPlayedCards(cards, id, playerNumber) {
         if (playerNumber == this.playerNumber) {
@@ -452,5 +466,39 @@ export default class BigTwo extends Phaser.Scene {
                 break;
         }
         return spriteName;
+    }
+
+    /**
+     * Checks if the client's hand is empty if so, then it has finished
+     * @returns {boolean} : True if we have won and the hand is empty, false otherwise
+     */
+    checkWinCondition() {
+        return this.hand.isEmpty();
+    }
+
+    /**
+     * Displays a message to the client showing they have finished the game at which place
+     * and the scores of the other players
+     * @param {integer} place : The place the client has placed in (1st, 2nd, 3rd, 4th) or -1
+     *                          if the client has not actually won.
+     * @param {Array} scores : An array of the scores for each player in the game
+     */
+    hasWon(place, scores) {
+        this.turn = false;
+        this.togglePlayPassButtons();
+        console.log(`You placed in position ${place}!`);
+        console.log(`Your score: ${scores}`);
+    }
+
+    /**
+     * 
+     */
+    gameOver(scores) {
+        // Display scores
+        console.log(scores);
+        // Show deal cards button if host
+        if (this.playerNumber == 1) {
+            this.dealText.setInteractive().setVisible(true);
+        }
     }
 }

@@ -13,8 +13,8 @@ export default class Rules {
 
     /**
      * Checks to see whether the cards a player intends to play is a pair or not
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if it is a pair, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if it is a pair, false otherwise
      */
     isPair(cardsToPlay) {
         if (cardsToPlay.length != 2) {
@@ -30,8 +30,8 @@ export default class Rules {
 
     /**
      * Checks to see whether the cards a player intends to play is a three of a kind or not
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if its a triple, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if its a triple, false otherwise
      */
     isTriple(cardsToPlay) {
         let numCards = cardsToPlay.length;
@@ -48,8 +48,8 @@ export default class Rules {
 
     /**
      * Checks to see whether the cards a player intends to play is a straight or not
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if it is a straight, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if it is a straight, false otherwise
      */
     isStraight(cardsToPlay) {
         for (let i = 0; i < cardsToPlay.length - 1; i++) {
@@ -62,8 +62,8 @@ export default class Rules {
 
     /**
      * Checks to see if the cards a player intends to play is a four of a kind or not
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if the cards to be played are four of a kind, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if the cards to be played are four of a kind, false otherwise
      */
     isQuads(cardsToPlay) {
         if (cardsToPlay.length != 4) {
@@ -82,8 +82,8 @@ export default class Rules {
     /**
      * Checks to see if the hand is a 'Bomb' - a set of at least three or more
      * pairs in sequential order
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if the cards to be played is a bomb, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if the cards to be played is a bomb, false otherwise
      */
     isBomb(cardsToPlay) {
         let num = cardsToPlay.length;
@@ -109,8 +109,8 @@ export default class Rules {
 
     /**
      * Checks if the current cards selected to be played is a valid play
-     * @param {Array} cardsToPlay - An array of card objects the player intends to play
-     * @returns {boolean} - True if valid, false otherwise
+     * @param {Array} cardsToPlay : An array of card objects the player intends to play
+     * @returns {boolean} : True if valid, false otherwise
      */
     checkIfValidPlayHand(selectedCards) {
         if (this.turnNumber == 0 &&
@@ -186,7 +186,7 @@ export default class Rules {
 
     /**
      * Sets the turn number to be the given turn number
-     * @param {integer} number - The turn number to set to
+     * @param {integer} number : The turn number to set to
      */
     setTurnNumber(number) {
         this.turnNumber = number;
@@ -194,7 +194,7 @@ export default class Rules {
 
     /**
      * Sets the last played cards
-     * @param {Array} lastPlayed - An array of cards which were played last
+     * @param {Array} lastPlayed : An array of cards which were played last
      */
     setLastPlayed(lastPlayed) {
         this.lastPlayed = lastPlayed;

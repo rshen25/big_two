@@ -29,7 +29,7 @@ module.exports = class GameManager {
         this.currentTurn = -1;              // The current player's id
         this.turnOrder = [];                // The order which players take their turns
         this.turnNumber = 0;                // The number of turns that have elapsed
-
+        this.placed = [];                   // The place each player finished
         return this.instance;
     }
 
@@ -129,10 +129,16 @@ module.exports = class GameManager {
     playPass() {
         this.incrementTurnCount();
         this.currentTurn = this.getCurrentPlayerTurn();
+        console.log(`Player Number: ${this.numberOfPlayers}`);
+        console.log(`Last Played Turn Number: ${this.lastPlayedTurn}`);
+
+        console.log(`${this.lastPlayedTurn % this.numberOfPlayers} , ${this.turnOrder[this.lastPlayedTurn % this.numberOfPlayers]}`);
+        console.log(`${this.currentTurn}`);
         // If every other player passes their turn and it goes back to the last player
         // to play their cards, we reset last played so the player make a new play
-        if (this.turnOrder[this.previouslyPlayedTurn % this.numberOfPlayers] == this.currentTurn) {
+        if (this.turnOrder[this.lastPlayedTurn % this.numberOfPlayers] == this.currentTurn) {
             this.lastPlayed = [];
+            console.log(`Everyone passed: ${this.currentTurn}`);
         }
 
         return this.currentTurn;
@@ -188,8 +194,8 @@ module.exports = class GameManager {
      * @returns {string} : The player id of the current turn's player
      */
     getCurrentPlayerTurn() {
-        console.log(this.turnNumber % this.numberOfPlayers);
-        return this.turnOrder[this.turnNumber % this.numberOfPlayers];
+        console.log(`Current Turn Pos: ${this.turnNumber % this.turnOrder.length}`);
+        return this.turnOrder[this.turnNumber % this.turnOrder.length];
     }
 
     /**
@@ -397,5 +403,66 @@ module.exports = class GameManager {
     setPreviouslyPlayed(cards, turnNumber) {
         this.lastPlayed = cards;
         this.lastPlayedTurn = turnNumber;
+    }
+
+    /**
+     * Checks if the player has finished the game by emptying their hand
+     * @param {string} id : The id of the player who we are checking
+     * @returns {boolean} : True if the player has finished, false otherwise
+     */
+    checkIfWon(id) {
+        if (this.players[id].getHand().isEmpty()) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Updates the scores and the score of the player and removes them from the turn order
+     * @param {string} id : The id of the player who finished
+     * @returns {integer} : the place the player finished at
+     */
+    playerWon(id) {
+        this.placed.push(id);
+        let place = this.placed.length;
+        this.players[id].updateScore(place);
+        removeFromTurnOrder(id);
+        if (place == 4) {
+            this.gameOver();
+        }
+
+        return place;
+    }
+
+    /**
+     * Removes the player from the turn order list
+     * @param {string} id : The id of the player to remove
+     */
+    removeFromTurnOrder(id) {
+        for (let i = 0; i < this.turnOrder.length; i++) {
+            if (this.turnOrder[i] == id) {
+                this.turnOrder.splice(i, 1);
+            }
+        }
+    }
+
+    /**
+     * Retrieves the score from the given player
+     * @param {string} id : The id of the player we want the score of
+     */
+    getPlayerScore(id) {
+        return this.players[id].getScore();
+    }
+
+    /**
+     * Gets the scores of every player in the game
+     * @returns {Object} : The scores of each player in the game
+     */
+    getScores() {
+        let scores = {};
+        for (const id in this.players) {
+            scores[id] = this.getPlayerScore(id);
+        }
+        return scores;
     }
 }

@@ -42,7 +42,7 @@ export default class PlayArea {
 
     /**
      * Gets the last cards played
-     * @returns {Array} - Array of Card objects which were played last
+     * @returns {Array} : Array of Card objects which were played last
      */
     getLastPlayed() {
         return this.lastPlayed;
@@ -50,8 +50,8 @@ export default class PlayArea {
 
     /**
      * Sets the origin position of the play area, the position is anchored in the middle
-     * @param {integer} x - The x position of the play area
-     * @param {integer} y - The y position of the play area
+     * @param {integer} x : The x position of the play area
+     * @param {integer} y : The y position of the play area
      */
     setPos(x, y) {
         this.x = x;
@@ -60,7 +60,7 @@ export default class PlayArea {
 
     /**
      * Sets the scene for the play area
-     * @param {Scene} scene - The scene for the which the play area belongs to
+     * @param {Scene} scene : The scene for the which the play area belongs to
      */
     setScene(scene) {
         this.scene = scene;
@@ -68,7 +68,7 @@ export default class PlayArea {
 
     /**
      * Sets the width of the play area
-     * @param {integer} width - The desired width of the play area
+     * @param {integer} width : The desired width of the play area
      */
     setWidth(width) {
         this.width = width;
@@ -76,7 +76,7 @@ export default class PlayArea {
 
     /**
      * Sets the height of the play area
-     * @param {integer} height - The desired height of the play area
+     * @param {integer} height : The desired height of the play area
      */
     setHeight(height) {
         this.height = height;

@@ -15,7 +15,7 @@ export default class Hand {
 
     /**
      * Draws a rectangle to visualize where the hand is in the game scene
-     * @param {Scene} scene - The current game scene
+     * @param {Scene} scene : The current game scene
      */
     renderOutline(scene) {
         let handOutline = scene.add.graphics();
@@ -26,7 +26,7 @@ export default class Hand {
 
     /**
     * Gets the card in the hand at the given index, if it exists
-    * @param {integer} index - The position of the card in the hand
+    * @param {integer} index : The position of the card in the hand
     * @returns {Card} The card object at the given index
     */
     getCard(index) {
@@ -38,7 +38,7 @@ export default class Hand {
 
     /**
      * Adds a card to the hand
-     * @param {Card} card - A Card object
+     * @param {Card} card : A Card object
      */
     add(card) {
         this.hand.push(card);
@@ -46,8 +46,8 @@ export default class Hand {
 
     /**
      * Removes a single card from the hand.
-     * @param {Card} card - The card to remove from the hand
-     * @returns {boolean} - True if the card was found in the hand and removed
+     * @param {Card} card : The card to remove from the hand
+     * @returns {boolean} : True if the card was found in the hand and removed
      */
     removeCard(index) {
         if (!this.hand) {
@@ -63,7 +63,7 @@ export default class Hand {
 
     /**
      * Removes multiple cards from the hand.
-     * @param {IntArray} indexes - An array of positions of cards to remove.
+     * @param {IntArray} indexes : An array of positions of cards to remove.
      */
     removeCards(indexes) {
         for (let i = indexes.length - 1; i >= 0; i--) {
@@ -73,8 +73,8 @@ export default class Hand {
 
     /**
      * Searches the hand to see if the given card is in the hand
-     * @param {Card} card - The card to search for
-     * @returns {integer} - Index of the card in hand if it exists, -1 otherwise
+     * @param {Card} card : The card to search for
+     * @returns {integer} : Index of the card in hand if it exists, -1 otherwise
      */
     findCard(card) {
         let l = 0;
@@ -112,8 +112,8 @@ export default class Hand {
 
     /**
      * Searches the hand for each card given and removes them from the hand if found
-     * @param {Array} cards - An array of card objects to find and remove
-     * @returns {boolean} - True if all the cards were found and removed, false otherwise
+     * @param {Array} cards : An array of card objects to find and remove
+     * @returns {boolean} : True if all the cards were found and removed, false otherwise
      */
     findAndRemoveCards(cards) {
         let cardsFound = [];
@@ -140,9 +140,9 @@ export default class Hand {
 
     /**
      * Partition function, used in the quicksort
-     * @param {integer} lowerIndex - The starting index of the array
-     * @param {integer} pivotIndex - The index of the pivot
-     * @returns {integer} - The index where the pivot is placed after the sorting
+     * @param {integer} lowerIndex : The starting index of the array
+     * @param {integer} pivotIndex : The index of the pivot
+     * @returns {integer} : The index where the pivot is placed after the sorting
      */
     partition(lowerIndex, pivotIndex) {
         l = lowerIndex - 1;
@@ -159,8 +159,8 @@ export default class Hand {
 
     /**
      * Helper function used to sort the hand in ascending order by value
-     * @param {integer} first - The starting index to start sorting from
-     * @param {integer} last - The index to stop sorting
+     * @param {integer} first : The starting index to start sorting from
+     * @param {integer} last : The index to stop sorting
      */
     sortValueHelper(first, last) {
         if (first < last) {
@@ -221,7 +221,7 @@ export default class Hand {
 
     /**
      * Checks to see if the hand does not currently hold any cards
-     * @returns {boolean} - True if the hand is currently empty, false otherwise
+     * @returns {boolean} : True if the hand is currently empty, false otherwise
      */
     isEmpty() {
         if (this.hand.length == 0) {
@@ -230,12 +230,19 @@ export default class Hand {
         return false;
     }
 
-
     /**
      * Pops the last card in the hand
      */
     pop() {
         return this.hand.pop();
+    }
+
+    /**
+     * Checks to see if the hand is empty
+     * @returns {boolean} : True if the hand is empty, false otherwise
+     * */
+    isEmpty() {
+        return (this.hand || this.hand.length == 0);
     }
 
     /**

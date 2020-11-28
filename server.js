@@ -38,6 +38,9 @@ function onConnect(socket) {
     // When a client passes their turn
     socket.on('passTurn', playerPass);
 
+    // When a client has emptied their hand
+    socket.on('hasWon', checkIfWon);
+
     // When the client disconnects
     socket.on('disconnect', onDisconnect);
 }
@@ -61,8 +64,8 @@ function startGame() {
     let handSizes = [];
     // Send the hands to each player
     for (const id in GameManager.players) {
-        io.to(id).emit('handDealt', GameManager.players[id].hand.hand);
-        handSizes.push(GameManager.players[id].hand.hand.length);
+        io.to(id).emit('handDealt', GameManager.players[id].getHand().hand);
+        handSizes.push(GameManager.players[id].getHand().hand.length);
     }
     io.emit('handSizes', handSizes);
 
@@ -88,10 +91,24 @@ function cardPlayed(cards, id, playerNumber, callback) {
         // Send the play to all other players
         callback(cards);
         console.log('Emited valid play');
+
+        // Check if the player has finished
+        if (GameManager.checkIfWon(id)) {
+            let place = GameManager.playerWon(id);
+            io.to(id).emit('hasWon', place, GameManager.getPlayerScore(id));
+            if (place == 3) {
+                let lastID = GameManager.turnOrder[0];
+                place = GameManager.playerWon(GameManager.turnOrder[0]);
+                io.to(lastID).emit('hasWon', place, GameManager.getPlayerScore(lastID));
+                io.emit('gameOver', GameManager.getScores());
+            }
+        }
+
         io.emit('otherPlayedCards', cards, id, playerNumber);
         console.log('Emited other played cards');
         io.emit('nextTurn', GameManager.currentTurn, cards);
         console.log('Emited next turn');
+        console.log(`Last Played Turn: ${GameManager.lastPlayedTurn}`);
     }
     else {
         callback([]);
@@ -104,7 +121,6 @@ function cardPlayed(cards, id, playerNumber, callback) {
  */
 function playerPass() {
     let currentPlayerNumber = GameManager.playPass();
-
     // Send it to all players
     io.emit('nextTurn', currentPlayerNumber, GameManager.lastPlayed);
 }

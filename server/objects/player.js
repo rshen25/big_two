@@ -10,6 +10,7 @@ module.exports = class Player {
         this.id = id;
         this.hand = new Hand();
         this.playerNumber = number;
+        this.score = [ 0, 0, 0, 0 ];
     }
 
     /**
@@ -44,5 +45,24 @@ module.exports = class Player {
      */
     addCardToHand(card) {
         this.hand.addCard(card);
+    }
+
+    /**
+     * Gets the score of the player
+     * @returns {Array} : An array representing the player's placement
+     */
+    getScore() {
+        return this.score;
+    }
+
+    /**
+     * Updates the score of the player given their placement
+     * @param {integer} place : The position where the player finished we want to update
+     *                          (1, 2, 3, 4)
+     */
+    updateScore(place) {
+        if (place >= 1 && place <= 4) {
+            this.score[place - 1]++;
+        }
     }
 }
