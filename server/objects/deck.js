@@ -22,7 +22,7 @@ module.exports = class Deck {
         let suits = Object.keys(this.suitRankings);
         for (let i = 0; i < suits.length; i++) {
             let suit = suits[i];
-            for (let j = 3; j <= 15; j++) {
+            for (let j = 3; j <= 7; j++) {
                 if (j == 15) {
                     this.deck.push(new Card(17, suit, i));
                 }

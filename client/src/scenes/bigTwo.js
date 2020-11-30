@@ -72,13 +72,11 @@ export default class BigTwo extends Phaser.Scene {
         this.eastHand.renderOutline(this);
 
         // Create a deal cards button to start dealing cards to the players
-        this.dealText = this.add.text(width / 2, height / 2, ['DEAL CARDS'])
+        this.dealText = this.add.text(width / 2, height / 2, ['START GAME'])
             .setFontSize(18).setFontFamily('Trebuchet MS')
             .setColor('#00ffff').setVisible(false);
 
-        this.dealText.on('pointerdown', function () {
-            self.socket.emit('dealCards');
-        });
+        this.dealText.on('pointerdown', () => { this.dealCards(); });
 
         /**
          * Create the play cards button
@@ -240,10 +238,11 @@ export default class BigTwo extends Phaser.Scene {
     /**
      * Sends a message to the server to make it deal the deck of cards to all players in
      * the current game
-     * @param {Socket} socket : The socket information of this client
      */
-    dealCards(socket) {
-        socket.emit('startGame');
+    dealCards() {
+        this.socket.emit('dealCards');
+        this.dealText.disableInteractive();
+        this.dealText.setVisible(false);
         console.log("Client: Cards Dealt");
     }
 
@@ -331,8 +330,6 @@ export default class BigTwo extends Phaser.Scene {
             this.gameRules.setLastPlayed(lastPlayed);
         }
         this.gameRules.incrementTurn();
-
-        // TODO: check for passing
 
         if (id == this.socket.id) {
             this.turn = true;
@@ -491,7 +488,7 @@ export default class BigTwo extends Phaser.Scene {
     }
 
     /**
-     * 
+     * When the game is over, it will show the scores and enables the start new game button
      */
     gameOver(scores) {
         // Display scores
@@ -500,5 +497,7 @@ export default class BigTwo extends Phaser.Scene {
         if (this.playerNumber == 1) {
             this.dealText.setInteractive().setVisible(true);
         }
+        this.turn = false;
+        this.togglePlayPassButtons();
     }
 }

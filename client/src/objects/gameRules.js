@@ -53,7 +53,8 @@ export default class Rules {
      */
     isStraight(cardsToPlay) {
         for (let i = 0; i < cardsToPlay.length - 1; i++) {
-            if (cardsToPlay[i].value != cardsToPlay[i + 1].value + 1) {
+            console.log(`Card ${i} : ${cardsToPlay[i].value}, ${i + 1} : ${cardsToPlay[i + 1].value}`);
+            if (cardsToPlay[i].value != cardsToPlay[i + 1].value - 1) {
                 return false;
             }
         }
@@ -132,7 +133,7 @@ export default class Rules {
             }
         }
         // Same amount of cards are being played this round from the last
-        if (numCards == this.lastPlayed.length) {
+        if (this.lastPlayed && numCards == this.lastPlayed.length) {
             console.log('old play');
             if (numCards == 1) {
                 if (selectedCards[0].compareTo(this.lastPlayed[0])) {
@@ -153,7 +154,7 @@ export default class Rules {
         }
         else {
             // If a single two was played and the current play is to play a 'Bomb'
-            if (this.lastPlayed[0] == 17 &&
+            if (this.lastPlayed[0].value == 17 &&
                 (this.isQuads(selectedCards) || this.isBomb(selectedCards))) {
                 return true;
             } 

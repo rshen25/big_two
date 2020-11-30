@@ -28,6 +28,7 @@ module.exports = class GameManager {
         this.lastPlayed = [];         // The cards that were played last
         this.currentTurn = -1;              // The current player's id
         this.turnOrder = [];                // The order which players take their turns
+        this.playerTurn = 0;
         this.turnNumber = 0;                // The number of turns that have elapsed
         this.placed = [];                   // The place each player finished
         return this.instance;
@@ -52,7 +53,7 @@ module.exports = class GameManager {
         console.log('User disconnected.');
 
         // Remove the player from the players object
-        delete this.players.id;
+        delete this.players[id];
 
         this.numberOfPlayers--;
     }
@@ -83,7 +84,7 @@ module.exports = class GameManager {
             this.turnOrder.push(this.getPlayerID(firstPlayer % 5));
         }
 
-        this.currentTurn = this.turnOrder[0];
+        this.currentTurn = this.turnOrder[this.playerTurn];
         console.log(`Turn order: ${this.turnOrder}`);
     }
 
@@ -113,6 +114,7 @@ module.exports = class GameManager {
             if (this.players[id].playCards(cards)) {
                 this.setPreviouslyPlayed(cards, this.turnNumber);
                 this.incrementTurnCount();
+                this.incrementPlayerTurn();
                 this.currentTurn = this.getCurrentPlayerTurn();
                 return true;
             }
@@ -128,15 +130,16 @@ module.exports = class GameManager {
      */
     playPass() {
         this.incrementTurnCount();
+        this.incrementPlayerTurn();
         this.currentTurn = this.getCurrentPlayerTurn();
-        console.log(`Player Number: ${this.numberOfPlayers}`);
+        console.log(`Turn Number length: ${this.turnOrder.length}`);
         console.log(`Last Played Turn Number: ${this.lastPlayedTurn}`);
 
-        console.log(`${this.lastPlayedTurn % this.numberOfPlayers} , ${this.turnOrder[this.lastPlayedTurn % this.numberOfPlayers]}`);
-        console.log(`${this.currentTurn}`);
+        console.log(`Last Played Turn: ${this.lastPlayedTurn % this.turnOrder.length} , ID: ${this.turnOrder[this.lastPlayedTurn % this.turnOrder.length]}`);
+        console.log(`Current ID's Turn: ${this.currentTurn}`);
         // If every other player passes their turn and it goes back to the last player
         // to play their cards, we reset last played so the player make a new play
-        if (this.turnOrder[this.lastPlayedTurn % this.numberOfPlayers] == this.currentTurn) {
+        if (this.turnOrder[this.playerTurn] == this.currentTurn) {
             this.lastPlayed = [];
             console.log(`Everyone passed: ${this.currentTurn}`);
         }
@@ -187,6 +190,7 @@ module.exports = class GameManager {
         this.currentTurn = 0;             
         this.turnOrder = [];               
         this.turnNumber = 0;
+        this.playerTurn = 0;
     }
 
     /**
@@ -194,8 +198,8 @@ module.exports = class GameManager {
      * @returns {string} : The player id of the current turn's player
      */
     getCurrentPlayerTurn() {
-        console.log(`Current Turn Pos: ${this.turnNumber % this.turnOrder.length}`);
-        return this.turnOrder[this.turnNumber % this.turnOrder.length];
+        console.log(`Current Turn Pos: ${this.playerTurn}`);
+        return this.turnOrder[this.playerTurn];
     }
 
     /**
@@ -205,6 +209,21 @@ module.exports = class GameManager {
         this.turnNumber++;
     }
 
+    /**
+    * Increments the player turn tracker
+    */
+    incrementPlayerTurn() {
+        this.playerTurn++;
+        this.playerTurn = this.playerTurn % this.turnOrder.length;
+    }
+
+    decrementPlayerTurn() {
+        this.playerTurn--;
+        if (this.playerTurn < 0) {
+            this.playerTurn = this.turnOrder.length - 1;
+        }
+        this.playerTurn = this.playerTurn % this.turnOrder.length;
+    }
 
     /****************************************************************************/
     // Game Logic
@@ -252,7 +271,7 @@ module.exports = class GameManager {
      */
     isStraight(cardsToPlay) {
         for (let i = 0; i < cardsToPlay.length - 1; i++) {
-            if (cardsToPlay[i].value != cardsToPlay[i + 1].value + 1) {
+            if (cardsToPlay[i].value != cardsToPlay[i + 1].value - 1) {
                 return false;
             }
         }
@@ -332,7 +351,7 @@ module.exports = class GameManager {
             }
         }
         // Same amount of cards are being played this round from the last
-        if (numCards == this.lastPlayed.length) {
+        if (this.lastPlayed && numCards == this.lastPlayed.length) {
             if (numCards == 1) {
                 if (this.compareCards(selectedCards[0], this.lastPlayed[0])) {
                     return true;
@@ -353,17 +372,17 @@ module.exports = class GameManager {
         }
         else {
             // If a single two was played and the current play is to play a 'Bomb'
-            if (this.lastPlayed[0] == 2 &&
+            if (this.lastPlayed[0].value == 17 &&
                 (this.isQuads(selectedCards) || this.isBomb(selectedCards))) {
                 return true;
             }
             // If there were pair twos played and the current play is a 'Bomb'
-            if (this.isPair(this.lastPlayed) && selectedCards[0] == 2 &&
+            if (this.isPair(this.lastPlayed) && selectedCards[0] == 17 &&
                 this.isBomb(selectedCards) && numCards >= 8) {
                 return true;
             }
             // If there were triple twos played and the current play is a 'Bomb'
-            if (this.isTriple(this.lastPlayed) && selectedCards[0] == 2 &&
+            if (this.isTriple(this.lastPlayed) && selectedCards[0] == 17 &&
                 this.isBomb(selectedCards) && numCards >= 10) {
                 return true;
             }
@@ -426,11 +445,8 @@ module.exports = class GameManager {
         this.placed.push(id);
         let place = this.placed.length;
         this.players[id].updateScore(place);
-        removeFromTurnOrder(id);
-        if (place == 4) {
-            this.gameOver();
-        }
-
+        this.removeFromTurnOrder(id);
+        this.decrementPlayerTurn();
         return place;
     }
 
@@ -444,6 +460,7 @@ module.exports = class GameManager {
                 this.turnOrder.splice(i, 1);
             }
         }
+        console.log(this.turnOrder);
     }
 
     /**

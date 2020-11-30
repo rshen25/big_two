@@ -12,7 +12,8 @@ const config = {
         height: 600,
     },
     scene: [
-        BigTwo
+        BigTwo,
+        Lobby
     ]
 };
 

@@ -25,24 +25,27 @@ http.listen(3000, function () {
  * @param {Socket} socket : socket object of the connected player
  */
 function onConnect(socket) {
-    console.log('A user connected: ' + socket.id);
-    GameManager.connectPlayer(socket.id);
-    io.to(socket.id).emit('playerNumber', GameManager.numberOfPlayers);
+    if (GameManager.numberOfPlayers >= 4) {
+        socket.emit('fullGame', 'Game is full');
+        socket.disconnect();
+    }
+    else {
+        console.log('A user connected: ' + socket.id);
+        GameManager.connectPlayer(socket.id);
+        io.to(socket.id).emit('playerNumber', GameManager.numberOfPlayers);
 
-    // Deal cards to players when button is pressed by host
-    socket.on('dealCards', startGame);
+        // Deal cards to players when button is pressed by host
+        socket.on('dealCards', startGame);
 
-    // When a card is played by the client
-    socket.on('playedCards', cardPlayed);
+        // When a card is played by the client
+        socket.on('playedCards', cardPlayed);
 
-    // When a client passes their turn
-    socket.on('passTurn', playerPass);
+        // When a client passes their turn
+        socket.on('passTurn', playerPass);
 
-    // When a client has emptied their hand
-    socket.on('hasWon', checkIfWon);
-
-    // When the client disconnects
-    socket.on('disconnect', onDisconnect);
+        // When the client disconnects
+        socket.on('disconnect', onDisconnect);
+    }
 }
 
 /**
@@ -90,7 +93,6 @@ function cardPlayed(cards, id, playerNumber, callback) {
     if (GameManager.playCards(cards, id, playerNumber)) {
         // Send the play to all other players
         callback(cards);
-        console.log('Emited valid play');
 
         // Check if the player has finished
         if (GameManager.checkIfWon(id)) {
@@ -105,9 +107,7 @@ function cardPlayed(cards, id, playerNumber, callback) {
         }
 
         io.emit('otherPlayedCards', cards, id, playerNumber);
-        console.log('Emited other played cards');
         io.emit('nextTurn', GameManager.currentTurn, cards);
-        console.log('Emited next turn');
         console.log(`Last Played Turn: ${GameManager.lastPlayedTurn}`);
     }
     else {

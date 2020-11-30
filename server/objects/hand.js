@@ -190,7 +190,7 @@ module.exports = class Hand {
      * @returns {boolean} : True if the hand is empty, false otherwise
      */
     isEmpty() {
-        return (this.hand || this.hand.length == 0);
+        return (!this.hand || this.hand.length == 0);
     }
 
     /**
