@@ -23,7 +23,7 @@ let db = new sqlite3.Database('./db/bigtwo.db', (err) => {
 // Create Table if it does not exist 
 db.serialize(() => {
     db.prepare(
-        `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, salt TEXT)`)
+        `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)`)
         .run().finalize();
 
     db.close();
