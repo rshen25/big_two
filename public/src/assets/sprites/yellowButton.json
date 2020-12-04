@@ -1,0 +1,36 @@
+{"frames": {
+
+"yellow_button_hover.png":
+{
+	"frame": {"x":0,"y":0,"w":190,"h":49},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":190,"h":49},
+	"sourceSize": {"w":190,"h":49}
+},
+"yellow_button_normal.png":
+{
+	"frame": {"x":0,"y":49,"w":190,"h":49},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":190,"h":49},
+	"sourceSize": {"w":190,"h":49}
+},
+"yellow_button_pressed.png":
+{
+	"frame": {"x":0,"y":98,"w":190,"h":45},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":190,"h":45},
+	"sourceSize": {"w":190,"h":45}
+}},
+"meta": {
+	"app": "https://www.codeandweb.com/texturepacker",
+	"version": "1.0",
+	"image": "yellowButton.png",
+	"format": "RGBA8888",
+	"size": {"w":190,"h":143},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:24774c4bfdd7591f65065fc5e7887ff6:6387ecaa05e45199b17b3f7866ceaa2a:645b365834467148eb751c9c9a88662d$"
+}
+}

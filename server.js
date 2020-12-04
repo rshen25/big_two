@@ -1,11 +1,23 @@
 const express = require('express');
-const server = express();
+const app = express();
+const server = require('http').createServer(app);
+const cors = require('cors');
+const io = require('socket.io')(server, {
+    cors: {
+        origin: "http://localhost:8080",
+        allowedHeaders: ["my-custom-header"],
+        methods: ["GET", "POST"],
+        credential: true
+    }
+});
 const gameManager = require('./server/objects/gameManager.js');
 const expressLayouts = require('express-ejs-layouts');
 const flash = require('connect-flash');
 const session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
 const passport = require('passport');
+const path = require('path');
+const { ensureAuthenticated } = require('./config/auth.js');
 
 // Passport config
 require('./config/passport')(passport);
@@ -29,29 +41,32 @@ db.serialize(() => {
     db.close();
 });
 
+// CORS
+app.use(cors());
+
 // EJS
-server.use(expressLayouts);
-server.set('view engine', 'ejs');
+app.use(expressLayouts);
+app.set('view engine', 'ejs');
 
 // Bodyparser
-server.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false }));
 
 // Express Session
-server.use(session({
+app.use(session({
     secret: 'secret',
     resave: true,
     saveUninitialized: true,
 }));
 
 // Passport middleware
-server.use(passport.initialize());
-server.use(passport.session());
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Connect flash
-server.use(flash());
+app.use(flash());
 
 // Global Vars
-server.use((req, res, next) => {
+app.use((req, res, next) => {
     res.locals.success_msg = req.flash('success_msg');
     res.locals.error_msg = req.flash('error_msg');
     res.locals.error = req.flash('error');
@@ -59,29 +74,28 @@ server.use((req, res, next) => {
 });
 
 // Routes
-server.use('/', require('./routes/index'));
-server.use('/users', require('./routes/users'));
+app.use('/', require('./routes/index'));
+app.use('/users', require('./routes/users'));
+
+// Game Page
+let clientPath = path.normalize(`${__dirname}/public/dist`);
+app.use(express.static(clientPath));
+app.get('/game.html', ensureAuthenticated ,(req, res) => {
+    res.sendFile(path.normalize(__dirname + '/public/dist/index.html'));
+})
 
 const PORT = process.env.PORT || 8080;
 
-const http = require('http').createServer(server);
-const io = require('socket.io')(http, {
-    cors: {
-        origin: "http://localhost:8080",
-        methods: ["GET", "POST"],
-        allowedHeaders: ["my-custom-header"],
-        credential: true
-    }
+io.listen(server);
+
+server.listen(PORT, () => {
+    console.log(`Listening on ${server.address().port}`);
 });
 
 let GameManager = new gameManager();
 
 // When a user connects to the server
 io.on('connection', onConnect);
-
-http.listen(PORT, function () {
-    console.log(`Listening on ${http.address().port}`);
-});
 
 /**
  * Adds the client to the list of players connected, adds the event listeners for 

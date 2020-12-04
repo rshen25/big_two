@@ -99,7 +99,7 @@ router.post('/register', (req, res) => {
 // Login Handle
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', {
-        successRedirect: '/dashboard',      // Change this to the lobby screen
+        successRedirect: '/game.html',
         failureRedirect: '/users/login',
         failureFlash: true
     })(req, res, next);

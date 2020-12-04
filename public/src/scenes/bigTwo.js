@@ -100,7 +100,12 @@ export default class BigTwo extends Phaser.Scene {
         /**
          * Server listener code
          */
-        this.socket = io("http://localhost:3000");
+        this.socket = io("localhost:8080", {
+            withCredentials: true,
+            extraHeaders: {
+                "my-custom-header": "abcd"
+            }
+            });
 
         this.socket.on('connect', this.onConnect);
 

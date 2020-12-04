@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import BigTwo from "./scenes/bigTwo.js";
+import Lobby from "./scenes/lobby.js";
 
 const config = {
     type: Phaser.AUTO,
@@ -12,8 +13,8 @@ const config = {
         height: 600,
     },
     scene: [
-        BigTwo,
-        Lobby
+        Lobby,
+        BigTwo
     ]
 };
 
