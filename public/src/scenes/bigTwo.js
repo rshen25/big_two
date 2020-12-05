@@ -6,6 +6,7 @@ import Card from '../objects/card.js';
 import Hand from '../objects/hand.js';
 import Rules from '../objects/gameRules.js';
 import PlayArea from '../objects/playArea.js';
+import Button from '../objects/button.js';
 
 export default class BigTwo extends Phaser.Scene {
     constructor() {
@@ -34,6 +35,15 @@ export default class BigTwo extends Phaser.Scene {
         this.load.atlasXML('cardBacks',
             'src/assets/sprites/playingCardBacks.png',
             'src/assets/sprites/playingCardBacks.xml');
+
+        // Pre-load the button sprites
+        this.load.atlas('redButton',
+            'src/assets/sprites/redButton.png',
+            'src/assets/sprites/redButton.json');
+
+        this.load.atlas('yellowButton',
+            'src/assets/sprites/yellowButton.png',
+            'src/assets/sprites/yellowButton.json');
     }
 
     create() {
@@ -72,26 +82,34 @@ export default class BigTwo extends Phaser.Scene {
         this.eastHand.renderOutline(this);
 
         // Create a deal cards button to start dealing cards to the players
-        this.dealText = this.add.text(width / 2, height / 2, ['START GAME'])
-            .setFontSize(18).setFontFamily('Trebuchet MS')
-            .setColor('#00ffff').setVisible(false);
+        let style = {
+            fontSize: 18, fontFamily: 'Trebuchet MS', color: '#00ffff'
+        };
+        this.dealBtn = new Button(self, width / 2, height / 2, 'redButton',
+            "red_button_normal.png", "red_button_pressed.png", "red_button_hover.png",
+            'START GAME', style)
+            .setVisible(false);
 
-        this.dealText.on('pointerdown', () => { this.dealCards(); });
+        this.dealBtn.on('pointerdown', () => { this.dealCards(); });
 
         /**
          * Create the play cards button
          */
-        this.playBtn = this.add.text(width - 70, height - 100, ['PLAY'])
-            .setFontSize(18).setFontFamily('Trebuchet MS');
+        style = { fontSize: 18, fontFamily: 'Trebuchet MS' };
+        this.playBtn = new Button(self, width - 50, height - 80, 'yellowButton',
+            "yellow_button_normal.png", "yellow_button_pressed.png", "yellow_button_hover.png",
+            'PLAY', style);
+        this.playBtn.sprite.setScale(0.5, 0.5);
 
         this.playBtn.on('pointerdown', this.playCards, this);
-
 
         /**
          * Create the pass turn button
          */
-        this.passBtn = this.add.text(width - 70, height - 50, ['PASS'])
-            .setFontSize(18).setFontFamily('Trebuchet MS');
+        this.passBtn = new Button(self, width - 50, height - 30, 'yellowButton',
+            "yellow_button_normal.png", "yellow_button_pressed.png", "yellow_button_hover.png",
+            'PASS', style);
+        this.passBtn.sprite.setScale(0.5, 0.5);
 
         this.passBtn.on('pointerdown', this.passTurn, this);
 
@@ -100,20 +118,23 @@ export default class BigTwo extends Phaser.Scene {
         /**
          * Server listener code
          */
-        this.socket = io("localhost:8080", {
+        this.socket = io("http://localhost:3000");
+        /**
+        this.socket = io("localhost:8080"
             withCredentials: true,
             extraHeaders: {
                 "my-custom-header": "abcd"
             }
             });
+        */
 
         this.socket.on('connect', this.onConnect);
 
         this.socket.on('playerNumber', function (playerNumber) {
             self.playerNumber = playerNumber;
             if (self.playerNumber == 1) {
-                self.dealText.setVisible(true);
-                self.dealText.setInteractive();
+                self.dealBtn.setVisible(true);
+                self.dealBtn.setInteractive();
             }
         });
 
@@ -246,8 +267,8 @@ export default class BigTwo extends Phaser.Scene {
      */
     dealCards() {
         this.socket.emit('dealCards');
-        this.dealText.disableInteractive();
-        this.dealText.setVisible(false);
+        this.dealBtn.disableInteractive();
+        this.dealBtn.setVisible(false);
         console.log("Client: Cards Dealt");
     }
 
@@ -307,16 +328,12 @@ export default class BigTwo extends Phaser.Scene {
      */
     togglePlayPassButtons() {
         if (this.turn) {
-            this.playBtn.setInteractive();
-            this.playBtn.setColor('#00ffff');
-            this.passBtn.setInteractive();
-            this.passBtn.setColor('#00ffff');
+            this.playBtn.enable();
+            this.passBtn.enable();
         }
         else {
-            this.playBtn.disableInteractive();
-            this.playBtn.setColor('#7d7d7d');
-            this.passBtn.disableInteractive();
-            this.passBtn.setColor('#7d7d7d');
+            this.playBtn.disable();
+            this.passBtn.disable();
         }
     }
 
@@ -500,7 +517,7 @@ export default class BigTwo extends Phaser.Scene {
         console.log(scores);
         // Show deal cards button if host
         if (this.playerNumber == 1) {
-            this.dealText.setInteractive().setVisible(true);
+            this.dealBtn.setInteractive().setVisible(true);
         }
         this.turn = false;
         this.togglePlayPassButtons();

@@ -8,10 +8,11 @@ import Button from '../objects/button.js';
 export default class PlayButton extends Button {
     constructor(scene, x, y, texture, up, down, over, style) {
         super(scene, x, y, texture, up, down, over, 'PLAY', style);
+        this.sprite.setScale(0.5, 0.5);
     }
 
     onClick() {
-        super();
+        super.onClick();
         this.emit('playCards');
     }
 }

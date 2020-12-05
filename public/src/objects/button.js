@@ -40,4 +40,63 @@ export default class Button extends Phaser.GameObjects.Container {
     onOut() {
         this.sprite.setFrame(this.spriteUp);
     }
+
+    /**
+    * Enables the button
+    */
+    enable() {
+        this.sprite.clearTint();
+        this.setInteractive();
+    }
+
+    /**
+     * Disables the button from being pressed
+     */
+    disable() {
+        // Set colour to grey
+        this.sprite.setTint('0xa1a1a1');
+
+        console.log('Tint applied');
+
+        // Disable interactivity
+        this.disableInteractive();
+    }
+
+    /**
+     * Sets the visibility of the button
+     * @param {boolean} bool : True to set the button invisible, false to be visible
+     */
+    setVisibility(bool) {
+        if (bool) {
+            this.isVisible(true);
+        }
+        else {
+            this.isVisible(false);
+        }
+    }
+
+    /**
+     * Sets the scale for the button sprite itself
+     * @param {number} xScale : The amount we want to scale the width
+     * @param {number} yScale : The amount we want to scale the height
+     */
+    setButtonScale(xScale, yScale) {
+        this.sprite.setScale(xScale, yScale);
+    }
+
+    /**
+     * Sets the font size of the text inside the button
+     * @param {integer} size : The font size
+     */
+    setFontSize(size) {
+        this.text.setFontSize(size);
+    }
+
+    /**
+     * Sets the text string inside the button
+     * @param {string} text : The text we want to set to
+     */
+    setText(text) {
+        this.text.setText(text);
+    }
 }
