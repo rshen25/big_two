@@ -45,6 +45,8 @@ function onConnect(socket) {
 
         // When the client disconnects
         socket.on('disconnect', onDisconnect);
+
+        socket.on('createRoom', createNewRoom);
     }
 }
 
@@ -123,4 +125,11 @@ function playerPass() {
     let currentPlayerNumber = GameManager.playPass();
     // Send it to all players
     io.emit('nextTurn', currentPlayerNumber, GameManager.lastPlayed);
+}
+
+/**
+ * 
+ */
+function createNewRoom(id) {
+
 }

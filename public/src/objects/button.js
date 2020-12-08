@@ -27,6 +27,7 @@ export default class Button extends Phaser.GameObjects.Container {
         this.on(Phaser.Input.Events.POINTER_DOWN, this.onClick, this);
         this.on(Phaser.Input.Events.POINTER_OVER, this.onHover, this);
         this.on(Phaser.Input.Events.POINTER_OUT, this.onOut, this);
+        this.on(Phaser.Input.Events.POINTER_UP, this.onOut, this);
     }
 
     onClick() {
