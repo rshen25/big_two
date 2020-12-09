@@ -81,10 +81,17 @@ app.use('/users', require('./routes/users'));
 //let clientPath = path.normalize(`${__dirname}/public/dist`);
 let clientPath = path.normalize(`${__dirname}/public/`);
 app.use(express.static(clientPath));
-app.get('/game.html', ensureAuthenticated ,(req, res) => {
-    //res.sendFile(path.normalize(__dirname + '/public/dist/index.html'));
-    res.sendFile(path.normalize(__dirname + '/public/index.html'));
-})
+app.get('/game.html', ensureAuthenticated, (req, res) => {
+    let options = {
+        dotfiles: deny,
+        headers: {
+            'x-timestamp': Date.now(),
+            'username': req.user
+        }
+    }
+    res.sendFile(path.normalize(__dirname + '/public/dist/index.html'), options);
+    //res.sendFile(path.normalize(__dirname + '/public/index.html'))
+});
 
 const PORT = process.env.PORT || 8080;
 

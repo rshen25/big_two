@@ -9,8 +9,11 @@ const io = require('socket.io')(http, {
     }
 });
 const gameManager = require('./server/objects/gameManager.js');
+const Room = require('./server/objects/room.js');
 
 let GameManager = new gameManager();
+
+let rooms = new Map();
 
 // When a user connects to the server
 io.on('connection', onConnect);
@@ -46,7 +49,15 @@ function onConnect(socket) {
         // When the client disconnects
         socket.on('disconnect', onDisconnect);
 
-        socket.on('createRoom', createNewRoom);
+        // When the client requests lobby information --- TODO: Add to the actual server
+        socket.on('requestLobbyData', (callback) => {
+            callback = getLobbyData();
+        })
+
+        // When the client wants to create a room --- TODO: Add to the actual server
+        socket.on('createRoom', (id, username, callback) => {
+            callback = createNewRoom(id, username);
+        });
     }
 }
 
@@ -128,8 +139,26 @@ function playerPass() {
 }
 
 /**
- * 
+ * TODO: Add to real server
+ * Returns an array of all the rooms that have been created and have users in it
+ * @returns {Array} : An array of all the rooms that are created
  */
-function createNewRoom(id) {
+function getLobbyData() {
+    return rooms;
+}
 
+/**
+ * TODO: atrs
+ * Creates a new room for the client to join
+ * @param {string} id : The socket id of the player creating the room
+ * @param {string} username : The username of the player creating the room
+ * @returns {boolean} : True if the room was successfully created, false otherwise
+ */
+function createNewRoom(id, username) {
+    let newRoom = new Room(id, username);
+    if (!newRoom) {
+        return false;
+    }
+    rooms.set('id', newRoom);
+    return true;
 }

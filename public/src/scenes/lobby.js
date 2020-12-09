@@ -102,14 +102,14 @@ export default class Lobby extends Phaser.Scene {
                     'CREATE ROOM', style)
                     .setInteractive()
                     .on('pointerdown', function () {
-                        console.log(`Pointer down refresh`)
+                        this.createRoom();
                     }),
                 0,         // proportion
                 'center'   // align
             ).add(new Button(self, 0, 0, 'yellowButton',
                 'yellow_button_normal.png', 'yellow_button_pressed.png', 'yellow_button_hover.png',
                 'REFRESH', style).setInteractive().on('pointerdown', () => {
-                    this.socket.emit('requestLobbyData', (data) => { this.refreshLobby(data);
+                    this.requestLobbyData();
                 }),
                 0,         // proportion
                 'center'),   // align
@@ -140,7 +140,6 @@ export default class Lobby extends Phaser.Scene {
                         text: scene.add.text(0, 0, ''),
 
                         space: {
-                            icon: 10,
                             left: (config.scrollMode === 0) ? 15 : 0,
                             top: (config.scrollMode === 0) ? 0 : 15,
                         }
@@ -153,27 +152,35 @@ export default class Lobby extends Phaser.Scene {
                 cellContainer.getElement('background').setStrokeStyle(2, COLOR_DARK).setDepth(0);
                 return cellContainer;
             },
-            items: this.CreateItems(100)
+            items: this.CreateItems(100) // TODO: REMOVE AND REPLACE WITH ACTUAL ROOMS
         })
             .layout()
 
-        this.roomTable.on('cell.over', function (cellContainer, cellIndex, pointer) {
+        this.roomTable.on('cell.over', (cellContainer, cellIndex, pointer) => {
             cellContainer.getElement('background')
                 .setStrokeStyle(2, COLOR_LIGHT)
                 .setDepth(1);
         }, this)
-            .on('cell.out', function (cellContainer, cellIndex, pointer) {
+            .on('cell.out', (cellContainer, cellIndex, pointer) => {
                 cellContainer.getElement('background')
                     .setStrokeStyle(2, COLOR_DARK)
                     .setDepth(0);
             }, this)
-            .on('cell.2tap', function (cellContainer, cellIndex, pointer) {
+            .on('cell.2tap', (cellContainer, cellIndex, pointer) => {
+                this.joinRoom(cellContainer.text); // TODO: get the room username from the text
             }, this)
 
 
         this.socket = io("http://localhost:3000");
 
-        this.socket.emit('')
+        this.requestLobbyData();
+
+        /**
+         * Get username from html header
+         */
+        let query = location.href.split("?")[1];
+        let id = query.split("&")[0];
+        this.username = id;
     }
 
     update() {
@@ -185,9 +192,15 @@ export default class Lobby extends Phaser.Scene {
      */
     createRoom() {
         // Signal to the server that we would like to create a new room
-        this.socket.emit('createRoom', socket.id);
+        this.socket.emit('createRoom', socket.id, (isCreated) => {
             // The server creates the room and sends an ack that the room is created, switch to new room
-            // pass in username to the new room
+            if (isCreated) {
+                this.scene.start('BigTwo', { username: this.username });
+            }
+            else {
+                console.log('Room creation failed');
+            }
+        });
     }
 
     /**
@@ -209,6 +222,15 @@ export default class Lobby extends Phaser.Scene {
             });
         }
         return data;
+    }
+
+    /**
+     * Request the lobby information 
+     */
+    requestLobbyData() {
+        this.socket.emit('requestLobbyData', (data) => {
+            this.refreshLobby(data);
+        });
     }
 
     /**

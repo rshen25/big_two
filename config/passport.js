@@ -48,12 +48,12 @@ module.exports = function (passport) {
             })
     );
 
-    passport.serializeUser(function(user, done) {
+    passport.serializeUser((user, done) => {
         done(null, user.id);
     });
 
     passport.deserializeUser((id, done) => {
-        db.get('SELECT id, username FROM users WHERE id = (?)', id, function(err, user) {
+        db.get('SELECT id, username FROM users WHERE id = (?)', id, (err, user) => {
             if (!user) {
                 return done(null, false);
             }

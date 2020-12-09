@@ -25,6 +25,10 @@ export default class BigTwo extends Phaser.Scene {
         this.turn = false;
     }
 
+    init(data) {
+        this.username = data.username;
+    }
+
     preload() {
         // Pre-load in the playing cards into the client
         this.load.atlasXML('playingCards',
