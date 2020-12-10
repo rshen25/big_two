@@ -3,10 +3,14 @@
  */ 
 
 module.exports = class Room {
-    constructor(id, username) {
-        this.id = id;
-        this.name = username;
-        this.players = [id];
+    constructor(player, username) {
+        this.id = player.id;
+        this.username = username;
+        this.players = [player];
+    }
+
+    addUser(player) {
+        this.players.push(player);
     }
 
     getNumberPlayers() {

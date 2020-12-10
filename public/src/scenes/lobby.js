@@ -102,14 +102,14 @@ export default class Lobby extends Phaser.Scene {
                     'CREATE ROOM', style)
                     .setInteractive()
                     .on('pointerdown', function () {
-                        this.createRoom();
+                        self.createRoom();
                     }),
                 0,         // proportion
                 'center'   // align
             ).add(new Button(self, 0, 0, 'yellowButton',
                 'yellow_button_normal.png', 'yellow_button_pressed.png', 'yellow_button_hover.png',
                 'REFRESH', style).setInteractive().on('pointerdown', () => {
-                    this.requestLobbyData();
+                    self.requestLobbyData();
                 }),
                 0,         // proportion
                 'center'),   // align
@@ -125,11 +125,11 @@ export default class Lobby extends Phaser.Scene {
                 footer: 10,
             },
 
-            createCellContainerCallback: (cell, cellContainer) => {
+            createCellContainerCallback: function (cell, cellContainer) {
                 let scene = cell.scene,
                     width = cell.width,
                     height = cell.height,
-                    item = cell.item,
+                    item = cell.item;
                 if (cellContainer === null) {
                     cellContainer = scene.rexUI.add.label({
                         width: width,
@@ -148,11 +148,11 @@ export default class Lobby extends Phaser.Scene {
 
                 // Set properties from item value
                 cellContainer.setMinSize(width, height); // Size might changed in this demo
-                cellContainer.getElement('text').setText(item.id); // Set text of text object
+                cellContainer.getElement('text').setText(`${item.username}\'s Game`); // Set text of text object
                 cellContainer.getElement('background').setStrokeStyle(2, COLOR_DARK).setDepth(0);
                 return cellContainer;
             },
-            items: this.CreateItems(100) // TODO: REMOVE AND REPLACE WITH ACTUAL ROOMS
+            items: []
         })
             .layout()
 
@@ -167,7 +167,9 @@ export default class Lobby extends Phaser.Scene {
                     .setDepth(0);
             }, this)
             .on('cell.2tap', (cellContainer, cellIndex, pointer) => {
-                this.joinRoom(cellContainer.text); // TODO: get the room username from the text
+                let roomID = cellContainer.text.split("\'");
+                console.log(roomID[0]);
+                this.joinRoom(roomID[0]);
             }, this)
 
 
@@ -179,8 +181,11 @@ export default class Lobby extends Phaser.Scene {
          * Get username from html header
          */
         let query = location.href.split("?")[1];
-        let id = query.split("&")[0];
-        this.username = id;
+        if (query) {
+            let id = query.split("&")[0];
+            this.username = id;
+        }
+        this.username = 'testUser';
     }
 
     update() {
@@ -192,10 +197,10 @@ export default class Lobby extends Phaser.Scene {
      */
     createRoom() {
         // Signal to the server that we would like to create a new room
-        this.socket.emit('createRoom', socket.id, (isCreated) => {
+        this.socket.emit('createRoom', this.socket, this.username, (isCreated) => {
             // The server creates the room and sends an ack that the room is created, switch to new room
             if (isCreated) {
-                this.scene.start('BigTwo', { username: this.username });
+                this.startBigTwo();
             }
             else {
                 console.log('Room creation failed');
@@ -208,20 +213,18 @@ export default class Lobby extends Phaser.Scene {
      * @param {Room} room : The room we want to join, consists of the room's data we want to join
      */
     joinRoom(room) {
-        // Get room info from server
-
-        // If the room is joinable, join it and switch the scenes
-    }
-
-    CreateItems (count) {
-        var data = [];
-        for (var i = 0; i < count; i++) {
-            data.push({
-                id: i,
-                color: Random(0, 0xffffff)
-            });
-        }
-        return data;
+        // Attempt to join the room
+        this.socket.emit('joinRoom', this.socket, room, (response) => {
+            // If room is joinable, join it and switch scenes
+            if (response.status) {
+                console.log(`Joining ${response.room}`);
+                this.room = response.room;
+                this.startBigTwo(this.room);
+            }
+            else {
+                console.log('Failed to join room');
+            }
+        });
     }
 
     /**
@@ -238,9 +241,14 @@ export default class Lobby extends Phaser.Scene {
      * @param {Array} data : The array we want to update the lobby list with
      */
     refreshLobby(data) {
+        console.log(`Received: ${data}`);
         if (data || data.length > 0) {
-            this.roomTable.items = data;
+            this.roomTable.setItems(data);
         }
-        this.roomTable.updateTable(true);
+        this.roomTable.refresh();
+    }
+
+    startBigTwo(room) {
+        this.scene.start('BigTwo', { username: this.username, socket: this.socket, room: room });
     }
 }

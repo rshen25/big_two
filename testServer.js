@@ -51,12 +51,17 @@ function onConnect(socket) {
 
         // When the client requests lobby information --- TODO: Add to the actual server
         socket.on('requestLobbyData', (callback) => {
-            callback = getLobbyData();
-        })
+            callback(getLobbyData());
+        });
 
         // When the client wants to create a room --- TODO: Add to the actual server
         socket.on('createRoom', (id, username, callback) => {
-            callback = createNewRoom(id, username);
+            callback(createNewRoom(id, username));
+        });
+
+        // When the client attempts to join a room
+        socket.on('joinRoom', (socket, room, callback) => {
+            callback(joinRoom(socket, room));
         });
     }
 }
@@ -144,21 +149,61 @@ function playerPass() {
  * @returns {Array} : An array of all the rooms that are created
  */
 function getLobbyData() {
-    return rooms;
+    // Convert the room map to an array
+    let data = [];
+    console.log(`Number of rooms: ${rooms.size}, rooms: ${rooms}`);
+    if (rooms.size > 0) {
+        for (let room of rooms.values()) {
+            data.push(room);
+        }
+    }
+    return data;
 }
 
 /**
  * TODO: atrs
  * Creates a new room for the client to join
- * @param {string} id : The socket id of the player creating the room
+ * @param {Socket} socket : The socket of the player creating the room
  * @param {string} username : The username of the player creating the room
  * @returns {boolean} : True if the room was successfully created, false otherwise
  */
-function createNewRoom(id, username) {
-    let newRoom = new Room(id, username);
+function createNewRoom(socket, username) {
+    let player = GameManager.findPlayerById(socket.id);
+    if (!player) {
+        console.log(`Player ${socket.id} not found`);
+        return false;
+    }
+    let newRoom = new Room(player, username);
     if (!newRoom) {
         return false;
     }
-    rooms.set('id', newRoom);
+    rooms.set(username, newRoom);
+
+    // Add the player to the socket room
+    socket.join(socket.id);
+
     return true;
+}
+
+/**
+ * TODO: atrs
+ * Attempts to join the client to the given room, if possible
+ * @param {Socket} socket : The socket of the joining player
+ * @param {Room} room : The room we want to join
+ */
+function joinRoom(socket, room) {
+    let roomToJoin = rooms.get(room);
+    if (!roomToJoin) {
+        return { status: false, room: undefined };
+    }
+    let player = GameManager.findPlayerById(socket.id);
+    if (!player) {
+        return { status: false, room: undefined };
+    }
+    roomToJoin.addUser(player);
+
+    // Add the player's socket to the socket room
+    socket.join(roomToJoin.id);
+    
+    return { status: true, room: roomToJoin.id };
 }

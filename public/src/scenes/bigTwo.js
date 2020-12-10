@@ -27,6 +27,7 @@ export default class BigTwo extends Phaser.Scene {
 
     init(data) {
         this.username = data.username;
+        this.socket = data.socket;
     }
 
     preload() {
@@ -122,7 +123,7 @@ export default class BigTwo extends Phaser.Scene {
         /**
          * Server listener code
          */
-        this.socket = io("http://localhost:3000");
+        // this.socket = io("http://localhost:3000");
         /**
         this.socket = io("localhost:8080"
             withCredentials: true,

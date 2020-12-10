@@ -482,4 +482,13 @@ module.exports = class GameManager {
         }
         return scores;
     }
+
+    /**
+     * Searches for and returns the player based on their id
+     * @param {string} id : The id of the player we want to find
+     * @returns {Player} : If found, will return the player, returns undefined otherwise
+     */
+    findPlayerById(id) {
+        return this.players[id];
+    }
 }
