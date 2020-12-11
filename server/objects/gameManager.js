@@ -6,8 +6,6 @@ let Deck = require('./deck.js');
 
 module.exports = class GameManager {
 
-    static instance = null;
-
     suitRanking = {
         'Spades': 0,
         'Clubs': 1,
@@ -16,10 +14,6 @@ module.exports = class GameManager {
     }
 
     constructor() {
-        if (!this.instance) {
-            this.instance = this;
-            this.deck = new Deck(this.suitRanking);
-        }
         this.deck = new Deck(this.suitRanking);
         this.numberOfPlayers = 0;           // The number of players in the game
         this.players = {};                  // Players object to hold the players

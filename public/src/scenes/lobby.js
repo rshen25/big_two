@@ -170,12 +170,7 @@ export default class Lobby extends Phaser.Scene {
                 let roomID = cellContainer.text.split("\'");
                 console.log(roomID[0]);
                 this.joinRoom(roomID[0]);
-            }, this)
-
-
-        this.socket = io("http://localhost:3000");
-
-        this.requestLobbyData();
+            }, this);
 
         /**
          * Get username from html header
@@ -186,6 +181,11 @@ export default class Lobby extends Phaser.Scene {
             this.username = id;
         }
         this.username = 'testUser';
+
+        this.socket = io("http://localhost:3000");
+
+        this.requestLobbyData();
+
     }
 
     update() {
@@ -200,7 +200,7 @@ export default class Lobby extends Phaser.Scene {
         this.socket.emit('createRoom', this.socket, this.username, (isCreated) => {
             // The server creates the room and sends an ack that the room is created, switch to new room
             if (isCreated) {
-                this.startBigTwo();
+                this.startBigTwo(this.username, 1);
             }
             else {
                 console.log('Room creation failed');
@@ -213,13 +213,14 @@ export default class Lobby extends Phaser.Scene {
      * @param {Room} room : The room we want to join, consists of the room's data we want to join
      */
     joinRoom(room) {
+        let user = { socket: this.socket, username: this.username };
         // Attempt to join the room
-        this.socket.emit('joinRoom', this.socket, room, (response) => {
+        this.socket.emit('joinRoom', user, room, (response) => {
             // If room is joinable, join it and switch scenes
             if (response.status) {
                 console.log(`Joining ${response.room}`);
                 this.room = response.room;
-                this.startBigTwo(this.room);
+                this.startBigTwo(this.room, response.playerNumber);
             }
             else {
                 console.log('Failed to join room');
@@ -248,7 +249,15 @@ export default class Lobby extends Phaser.Scene {
         this.roomTable.refresh();
     }
 
-    startBigTwo(room) {
-        this.scene.start('BigTwo', { username: this.username, socket: this.socket, room: room });
+    /**
+     * Starts the Big Two game scene
+     * @param {Room} room : The name of the Big Two room
+     * @param {integer} playerNumber : The player number of the player when they join the room
+     */
+    startBigTwo(room, playerNumber) {
+        this.scene.start('BigTwo', {
+            username: this.username, socket: this.socket,
+            room: room, playerNumber: playerNumber
+        });
     }
 }

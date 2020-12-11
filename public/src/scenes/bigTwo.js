@@ -28,6 +28,8 @@ export default class BigTwo extends Phaser.Scene {
     init(data) {
         this.username = data.username;
         this.socket = data.socket;
+        this.playerNumber = data.playerNumber;
+        this.room = data.room;
     }
 
     preload() {
@@ -86,6 +88,20 @@ export default class BigTwo extends Phaser.Scene {
         // east player
         this.eastHand.renderOutline(this);
 
+        let pNumber = this.playerNumber;
+        let players = [];
+        for (let i = 1; i < 4; i++) {
+            pNumber++;
+            if (pNumber % 5 == 0) {
+                pNumber = 1;
+            }
+            players.push(pNumber);
+        }
+
+        this.westHand.playerNumber = players[0];
+        this.northHand.playerNumber = players[1];
+        this.eastHand.playerNumber = players[2];
+
         // Create a deal cards button to start dealing cards to the players
         let style = {
             fontSize: 18, fontFamily: 'Trebuchet MS', color: '#00ffff'
@@ -133,9 +149,11 @@ export default class BigTwo extends Phaser.Scene {
             });
         */
 
-        this.socket.on('connect', this.onConnect);
+        this.socket.on('onJoinRoom', (username) => {
+            console.log(`${username} has joined the room.`);
+        });
 
-        this.socket.on('playerNumber', function (playerNumber) {
+        this.socket.on('playerNumber',  (playerNumber) => {
             self.playerNumber = playerNumber;
             if (self.playerNumber == 1) {
                 self.dealBtn.setVisible(true);
@@ -143,12 +161,12 @@ export default class BigTwo extends Phaser.Scene {
             }
         });
 
-        this.socket.on('otherPlayerJoined', function (id) {
+        this.socket.on('otherPlayerJoined', (id) => {
             this.otherPlayers += 1;
             console.log(`User ${id} joined.`);
         });
 
-        this.socket.on('otherPlayerDisconnect', function (id) {
+        this.socket.on('otherPlayerDisconnect', (id) => {
             this.otherPlayers -= 1;
             console.log(`User ${id} left.`);
         });
@@ -161,28 +179,11 @@ export default class BigTwo extends Phaser.Scene {
             this.validPlay(response);
         });
 
-        this.socket.on('playerNumber', function (playerNumber) {
-            self.playerNumber = playerNumber;
-            let pNumber = playerNumber;
-            let players = [];
-            for (let i = 1; i < 4; i++) {
-                pNumber++;
-                if (pNumber % 5 == 0) {
-                    pNumber = 1;
-                }
-                players.push(pNumber);
-            }
-
-            self.westHand.playerNumber = players[0];
-            self.northHand.playerNumber = players[1];
-            self.eastHand.playerNumber = players[2];
-        });
-
         this.socket.on('nextTurn', (id, lastPlayed) => { this.checkIfTurn(id, lastPlayed); });
 
         // Get the player's hand from the server and add the cards to the hand and 
         // draw them onto the scene 
-        this.socket.on('handDealt', function (data) {
+        this.socket.on('handDealt', (data) => {
             console.log(self.hand);
             console.log(data);
             let spriteName;
@@ -203,7 +204,7 @@ export default class BigTwo extends Phaser.Scene {
         });
 
         // Get the other player's hand sizes and draw the cards onto the scene
-        this.socket.on('handSizes', function (handSizes) {
+        this.socket.on('handSizes', (handSizes) => {
             handSizes.splice(self.playerNumber, 1);
             console.log(handSizes);
             let key = 'cardBacks';
@@ -271,10 +272,15 @@ export default class BigTwo extends Phaser.Scene {
      * the current game
      */
     dealCards() {
-        this.socket.emit('dealCards');
-        this.dealBtn.disableInteractive();
-        this.dealBtn.setVisible(false);
-        console.log("Client: Cards Dealt");
+        this.socket.emit('dealCards', this.room, response);
+        if (response && response.status == true) {
+            this.dealBtn.disableInteractive();
+            this.dealBtn.setVisible(false);
+            console.log("Client: Cards Dealt");
+        }
+        else {
+            console.log('Failed to deal cards');
+        }
     }
 
     /**
@@ -342,7 +348,7 @@ export default class BigTwo extends Phaser.Scene {
         }
     }
 
-    onConnect() {
+    onConnect(username) {
         console.log('Connected!');
     }
 

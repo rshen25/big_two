@@ -12,7 +12,7 @@ const gameManager = require('./server/objects/gameManager.js');
 const Room = require('./server/objects/room.js');
 
 let GameManager = new gameManager();
-
+let users = new Map();
 let rooms = new Map();
 
 // When a user connects to the server
@@ -28,42 +28,39 @@ http.listen(3000, function () {
  * @param {Socket} socket : socket object of the connected player
  */
 function onConnect(socket) {
-    if (GameManager.numberOfPlayers >= 4) {
-        socket.emit('fullGame', 'Game is full');
-        socket.disconnect();
-    }
-    else {
-        console.log('A user connected: ' + socket.id);
-        GameManager.connectPlayer(socket.id);
-        io.to(socket.id).emit('playerNumber', GameManager.numberOfPlayers);
+    console.log('A user connected: ' + socket.id);
+    GameManager.connectPlayer(socket.id);
 
-        // Deal cards to players when button is pressed by host
-        socket.on('dealCards', startGame);
+    // Deal cards to players when button is pressed by host
+    socket.on('dealCards', (room, callback) => {
+        callback(startGame(room));
+    });
 
-        // When a card is played by the client
-        socket.on('playedCards', cardPlayed);
+    // When a card is played by the client
+    socket.on('playedCards', cardPlayed);
 
-        // When a client passes their turn
-        socket.on('passTurn', playerPass);
+    // When a client passes their turn
+    socket.on('passTurn', playerPass);
 
-        // When the client disconnects
-        socket.on('disconnect', onDisconnect);
+    // When the client disconnects
+    socket.on('disconnect', onDisconnect);
 
-        // When the client requests lobby information --- TODO: Add to the actual server
-        socket.on('requestLobbyData', (callback) => {
-            callback(getLobbyData());
-        });
+    socket.on('disconnectRoom', onDisconnectRoom);
 
-        // When the client wants to create a room --- TODO: Add to the actual server
-        socket.on('createRoom', (id, username, callback) => {
-            callback(createNewRoom(id, username));
-        });
+    // When the client requests lobby information --- TODO: Add to the actual server
+    socket.on('requestLobbyData', (callback) => {
+        callback(getLobbyData());
+    });
 
-        // When the client attempts to join a room
-        socket.on('joinRoom', (socket, room, callback) => {
-            callback(joinRoom(socket, room));
-        });
-    }
+    // When the client wants to create a room --- TODO: Add to the actual server
+    socket.on('createRoom', (id, username, callback) => {
+        callback(createNewRoom(id, username));
+    });
+
+    // When the client attempts to join a room
+    socket.on('joinRoom', (user, room, callback) => {
+        callback(joinRoom(user, room));
+    });
 }
 
 /**
@@ -75,26 +72,35 @@ function onDisconnect(socket) {
     GameManager.disconnectPlayer(socket.id);
 }
 
+function onDisconnectRoom(id, username, room)
+
 /**
  * Deals cards to all the connected players and sends their hands to the respective client
  */
-function startGame() {
+function startGame(room) {
     GameManager.resetGame();
+    // Find and get room
+    let gameRoom = this.rooms.get(room);
+    let players = gameRoom.getPlayers();
 
-    hands = GameManager.dealCards();
-    let handSizes = [];
-    // Send the hands to each player
-    for (const id in GameManager.players) {
-        io.to(id).emit('handDealt', GameManager.players[id].getHand().hand);
-        handSizes.push(GameManager.players[id].getHand().hand.length);
+    if (gameRoom) {
+        hands = GameManager.dealCards();
+        let handSizes = [];
+        // Send the hands to each player
+        for (const id in GameManager.players) {
+            io.to(id).emit('handDealt', GameManager.players[id].getHand().hand);
+            handSizes.push(GameManager.players[id].getHand().hand.length);
+        }
+        io.to(room).emit('handSizes', handSizes);
+
+        console.log('Server: Cards dealt');
+
+        GameManager.generatePlayerOrder();
+
+        io.to(room).emit('nextTurn', GameManager.currentTurn);
+        return true;
     }
-    io.emit('handSizes', handSizes);
-
-    console.log('Server: Cards dealt');
-
-    GameManager.generatePlayerOrder();
-
-    io.emit('nextTurn', GameManager.currentTurn);
+    return false;
 }
 
 /**
@@ -180,7 +186,7 @@ function createNewRoom(socket, username) {
     rooms.set(username, newRoom);
 
     // Add the player to the socket room
-    socket.join(socket.id);
+    socket.join(username);
 
     return true;
 }
@@ -191,19 +197,22 @@ function createNewRoom(socket, username) {
  * @param {Socket} socket : The socket of the joining player
  * @param {Room} room : The room we want to join
  */
-function joinRoom(socket, room) {
+function joinRoom(user, room) {
     let roomToJoin = rooms.get(room);
     if (!roomToJoin) {
         return { status: false, room: undefined };
     }
-    let player = GameManager.findPlayerById(socket.id);
+    let player = GameManager.findPlayerById(user.socket.id);
     if (!player) {
         return { status: false, room: undefined };
     }
-    roomToJoin.addUser(player);
+
+    if (!roomToJoin.addPlayer(player)) {
+        return {}
+    }
 
     // Add the player's socket to the socket room
-    socket.join(roomToJoin.id);
-    
-    return { status: true, room: roomToJoin.id };
+    user.socket.join(roomToJoin.username);
+    io.to(roomToJoin.username).emit('onJoinRoom', user.username);
+    return { status: true, room: roomToJoin.username, playerNumber: roomToJoin.getNumberPlayers() };
 }
