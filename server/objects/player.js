@@ -5,12 +5,13 @@
 let Hand = require('./hand.js');
 
 module.exports = class Player {
-    constructor(id, number) {
-        this.isRoomOwner = false;
+    constructor(id, username) {
         this.id = id;
+        this.username = username;
         this.hand = new Hand();
         this.playerNumber = number;
-        this.score = [ 0, 0, 0, 0 ];
+        this.score = [0, 0, 0, 0];
+        this.gameRoom = '';
     }
 
     /**
@@ -64,5 +65,13 @@ module.exports = class Player {
         if (place >= 1 && place <= 4) {
             this.score[place - 1]++;
         }
+    }
+
+    setGameRoom(room) {
+        this.gameRoom = room;
+    }
+
+    setPlayerNumber(number) {
+        this.playerNumber = number;
     }
 }

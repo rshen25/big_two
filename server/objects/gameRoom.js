@@ -1,10 +1,10 @@
 /**
- * Game Manager singleton that manages the game logic and assets
+ * Game room that manages the game logic, room management and assets
  */
-let Player = require('./player.js');
-let Deck = require('./deck.js');
+const Player = require('./player.js');
+const Deck = require('./deck.js');
 
-module.exports = class GameManager {
+module.exports = class GameRoom {
 
     suitRanking = {
         'Spades': 0,
@@ -13,10 +13,11 @@ module.exports = class GameManager {
         'Hearts' : 3,
     }
 
-    constructor() {
+    constructor(player, username) {
         this.deck = new Deck(this.suitRanking);
+        this.roomID = username;            // The room's name
         this.numberOfPlayers = 0;           // The number of players in the game
-        this.players = {};                  // Players object to hold the players
+        this.players = [player];                  // Players object to hold the players
 
         this.lastPlayedTurn = 0;      // The turn where the last play was made
         this.lastPlayed = [];         // The cards that were played last
@@ -29,14 +30,19 @@ module.exports = class GameManager {
     }
 
     /**
-     * Adds a player to the game
-     * @param {string} id : The player id
+     * Attempts to add the player into the room
+     * @param {Player} player : The player we would like to add to the room
+     * @returns {boolean} : True if the player is able to join the room, false otherwise
      */
-    connectPlayer(id) {
-        this.numberOfPlayers++;
-        this.players[id] = new Player(id, this.numberOfPlayers);
-
-        console.log(`A user connected. Number of Players: ${this.numberOfPlayers}`);
+    addPlayer(player) {
+        if (this.getNumberPlayers >= 4) {
+            console.log('Room is full unable to join');
+            return false;
+        }
+        this.players.push(player);
+        this.numberOfPlayers++:
+        console.log(`${player} joined, players in room ${this.numberOfPlayers}`);
+        return true;
     }
 
     /**
@@ -88,11 +94,24 @@ module.exports = class GameManager {
      * @returns {string} : The player id string, or null if not found
      */
     getPlayerID(playerNumber) {
-        for (const id in this.players) {
-            if (this.players[id].playerNumber == playerNumber) {
-                return id;
-            }
+        let player = this.players[playerNumber - 1];
+        if (player.number === playerNumber) {
+            return player.id;
         }
+        return null;
+    }
+
+    /**
+     * Gets the player number of the given player's ID
+     * @param {string} id : The id of the player we are searching for
+     * @returns {integer} : The player number of the player we are looking for
+     */
+    getPlayerNumberByID(id) {
+        this.players.forEach((player) => {
+            if (player.id === id) {
+                return player.playerNumber;
+            }
+        });
         return null;
     }
 
@@ -102,10 +121,10 @@ module.exports = class GameManager {
      * @param {string} id : The string id of the player
      * @returns {boolean} : True if the cards were played
      */
-    playCards(cards, id) {
+    playCards(cards, id, playerNumber) {
         // Call the Game Manager to see if the play is valid
         if (this.checkIfValidPlayHand(cards)) {
-            if (this.players[id].playCards(cards)) {
+            if (this.players[playerNumber - 1].playCards(cards)) {
                 this.setPreviouslyPlayed(cards, this.turnNumber);
                 this.incrementTurnCount();
                 this.incrementPlayerTurn();
@@ -145,17 +164,15 @@ module.exports = class GameManager {
      * Deals the cards to all the players in the game
      */
     dealCards() {
-        this.resetDeck();
-        let playersInRoom = [];
-        for (const id in this.players) {
-            playersInRoom.push(this.players[id]);
-        }
-        this.deck.deal(playersInRoom);
+        this.resetGame();
+        this.shuffle();
+
+        this.deck.deal(this.players);
 
         // Sort their hands by value after their hands have been dealt
-        for (const id in this.players) {
-            this.players[id].getHand().sortByValue();
-        }
+        this.players.forEach((player) => {
+            player.getHand().sortByValue();
+        })
 
         return this.players;
     }
@@ -217,6 +234,77 @@ module.exports = class GameManager {
             this.playerTurn = this.turnOrder.length - 1;
         }
         this.playerTurn = this.playerTurn % this.turnOrder.length;
+    }
+
+    /**
+     * Returns the players in the room
+     * @returns {Array} : An array of players in the room
+     */
+    getPlayers() {
+        return this.players;
+    }
+
+    /**
+     * Returns the number of players in the room
+     * @returns {integer} : The number of players in the room
+     */
+    getNumberPlayers() {
+        return this.players.length;
+    }
+
+    /**
+     * Removes the player from the turn order list
+     * @param {string} id : The id of the player to remove
+     */
+    removeFromTurnOrder(id) {
+        for (let i = 0; i < this.turnOrder.length; i++) {
+            if (this.turnOrder[i] == id) {
+                this.turnOrder.splice(i, 1);
+            }
+        }
+        console.log(this.turnOrder);
+    }
+
+    /**
+     * Retrieves the score from the given player
+     * @param {integer} playerNumber : The player number of the player we want the score of
+     */
+    getPlayerScore(playerNumber) {
+        return this.players[playerNumber - 1].getScore();
+    }
+
+    /**
+     * Retrieves the score from the given player id
+     * @param {string} id : The id of the player we want the score of
+     */
+    getPlayerScoreByID(id) {
+        this.players.forEach((player) => {
+            if (player.id === id) {
+                return player.getScore();
+            }
+        });
+        return null;
+    }
+
+    /**
+     * Gets the scores of every player in the game
+     * @returns {Object} : The scores of each player in the game
+     */
+    getScores() {
+        let scores = {};
+        this.players.forEach((player) => {
+            scores[player.id] = this.getPlayerScoreByID(player.id);
+        });
+        return scores;
+    }
+
+    /**
+     * Searches for and returns the player based on their id
+     * @param {string} id : The id of the player we want to find
+     * @returns {Player} : If found, will return the player, returns undefined otherwise
+     */
+    findPlayerById(id) {
+        return this.players[id];
     }
 
     /****************************************************************************/
@@ -420,11 +508,11 @@ module.exports = class GameManager {
 
     /**
      * Checks if the player has finished the game by emptying their hand
-     * @param {string} id : The id of the player who we are checking
+     * @param {integer} playerNumber : The player number of the player who we are checking
      * @returns {boolean} : True if the player has finished, false otherwise
      */
-    checkIfWon(id) {
-        if (this.players[id].getHand().isEmpty()) {
+    checkIfWon(playerNumber) {
+        if (this.players[playerNumber - 1].getHand().isEmpty()) {
             return true;
         }
         return false;
@@ -432,57 +520,16 @@ module.exports = class GameManager {
 
     /**
      * Updates the scores and the score of the player and removes them from the turn order
-     * @param {string} id : The id of the player who finished
+     * @param {integer} playerNumber : The player number of the player who finished
      * @returns {integer} : the place the player finished at
      */
-    playerWon(id) {
-        this.placed.push(id);
+    playerWon(playerNumber) {
+        let playerID = this.players[playerNumber - 1].id;
+        this.placed.push(playerID);
         let place = this.placed.length;
-        this.players[id].updateScore(place);
-        this.removeFromTurnOrder(id);
+        this.players[playerNumber - 1].updateScore(place);
+        this.removeFromTurnOrder(playerID);
         this.decrementPlayerTurn();
         return place;
-    }
-
-    /**
-     * Removes the player from the turn order list
-     * @param {string} id : The id of the player to remove
-     */
-    removeFromTurnOrder(id) {
-        for (let i = 0; i < this.turnOrder.length; i++) {
-            if (this.turnOrder[i] == id) {
-                this.turnOrder.splice(i, 1);
-            }
-        }
-        console.log(this.turnOrder);
-    }
-
-    /**
-     * Retrieves the score from the given player
-     * @param {string} id : The id of the player we want the score of
-     */
-    getPlayerScore(id) {
-        return this.players[id].getScore();
-    }
-
-    /**
-     * Gets the scores of every player in the game
-     * @returns {Object} : The scores of each player in the game
-     */
-    getScores() {
-        let scores = {};
-        for (const id in this.players) {
-            scores[id] = this.getPlayerScore(id);
-        }
-        return scores;
-    }
-
-    /**
-     * Searches for and returns the player based on their id
-     * @param {string} id : The id of the player we want to find
-     * @returns {Player} : If found, will return the player, returns undefined otherwise
-     */
-    findPlayerById(id) {
-        return this.players[id];
     }
 }

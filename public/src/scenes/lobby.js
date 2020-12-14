@@ -32,6 +32,20 @@ export default class Lobby extends Phaser.Scene {
         let height = this.scale.height;
 
         /**
+         * Get username from html header
+         */
+        let query = location.href.split("?")[1];
+        if (query) {
+            let id = query.split("&")[0];
+            this.username = id;
+        }
+        this.username = 'testUser' + Random(1, 500); // TODO: Change to actual username, used only for testing
+
+        this.socket = io("http://localhost:3000" + `?data=${this.username}`);
+
+        this.socket.on('connection', this.onConnect);
+
+        /**
          * Create the join room and create room buttons
          */
 
@@ -101,12 +115,10 @@ export default class Lobby extends Phaser.Scene {
                     'yellow_button_normal.png', 'yellow_button_pressed.png', 'yellow_button_hover.png',
                     'CREATE ROOM', style)
                     .setInteractive()
-                    .on('pointerdown', function () {
-                        self.createRoom();
-                    }),
+                    .on('pointerdown', this.createRoom, this),
                 0,         // proportion
-                'center'   // align
-            ).add(new Button(self, 0, 0, 'yellowButton',
+                'center')   // align
+            .add(new Button(self, 0, 0, 'yellowButton',
                 'yellow_button_normal.png', 'yellow_button_pressed.png', 'yellow_button_hover.png',
                 'REFRESH', style).setInteractive().on('pointerdown', () => {
                     self.requestLobbyData();
@@ -172,23 +184,16 @@ export default class Lobby extends Phaser.Scene {
                 this.joinRoom(roomID[0]);
             }, this);
 
-        /**
-         * Get username from html header
-         */
-        let query = location.href.split("?")[1];
-        if (query) {
-            let id = query.split("&")[0];
-            this.username = id;
-        }
-        this.username = 'testUser';
-
-        this.socket = io("http://localhost:3000");
-
         this.requestLobbyData();
 
     }
 
-    update() {
+    update() { 
+
+    }
+
+    
+    onConnect() {
 
     }
 
@@ -196,10 +201,13 @@ export default class Lobby extends Phaser.Scene {
      * Creates a room for the player, makes them host and sends the player to the room
      */
     createRoom() {
+        console.log('Starting to create room');
         // Signal to the server that we would like to create a new room
-        this.socket.emit('createRoom', this.socket, this.username, (isCreated) => {
+        this.socket.emit('createRoom', this.username, (isCreated) => {
+            console.log(isCreated);
             // The server creates the room and sends an ack that the room is created, switch to new room
             if (isCreated) {
+                console.log('reached here');
                 this.startBigTwo(this.username, 1);
             }
             else {
@@ -213,9 +221,8 @@ export default class Lobby extends Phaser.Scene {
      * @param {Room} room : The room we want to join, consists of the room's data we want to join
      */
     joinRoom(room) {
-        let user = { socket: this.socket, username: this.username };
         // Attempt to join the room
-        this.socket.emit('joinRoom', user, room, (response) => {
+        this.socket.emit('joinRoom', room, (response) => {
             // If room is joinable, join it and switch scenes
             if (response.status) {
                 console.log(`Joining ${response.room}`);
@@ -255,6 +262,7 @@ export default class Lobby extends Phaser.Scene {
      * @param {integer} playerNumber : The player number of the player when they join the room
      */
     startBigTwo(room, playerNumber) {
+        console.log('creating room');
         this.scene.start('BigTwo', {
             username: this.username, socket: this.socket,
             room: room, playerNumber: playerNumber

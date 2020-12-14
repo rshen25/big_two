@@ -30,6 +30,9 @@ export default class BigTwo extends Phaser.Scene {
         this.socket = data.socket;
         this.playerNumber = data.playerNumber;
         this.room = data.room;
+        if (this.playerNumber == 1) {
+            this.isHost = true;
+        }
     }
 
     preload() {
@@ -58,6 +61,8 @@ export default class BigTwo extends Phaser.Scene {
         let self = this;
         let width = this.scale.width;
         let height = this.scale.height;
+
+        console.log(`Username : ${this.username}, PlayerNumber : ${this.playerNumber}, Room ${this.room}`);
 
         // Create play area
         this.playArea = new PlayArea(this, width / 2, height / 2,
@@ -108,10 +113,15 @@ export default class BigTwo extends Phaser.Scene {
         };
         this.dealBtn = new Button(self, width / 2, height / 2, 'redButton',
             "red_button_normal.png", "red_button_pressed.png", "red_button_hover.png",
-            'START GAME', style)
-            .setVisible(false);
+            'START GAME', style);
+        if (this.isHost) {
+            this.dealBtn.setVisible(true);
+        }
+        else {
+            this.dealBtn.setVisible(false)
+        }
 
-        this.dealBtn.on('pointerdown', () => { this.dealCards(); });
+        this.dealBtn.on('pointerdown', () => { this.startGame(); });
 
         /**
          * Create the play cards button
@@ -271,9 +281,9 @@ export default class BigTwo extends Phaser.Scene {
      * Sends a message to the server to make it deal the deck of cards to all players in
      * the current game
      */
-    dealCards() {
-        this.socket.emit('dealCards', this.room, response);
-        if (response && response.status == true) {
+    startGame() {
+        this.socket.emit('startGame', this.room, response);
+        if (response && response === true) {
             this.dealBtn.disableInteractive();
             this.dealBtn.setVisible(false);
             console.log("Client: Cards Dealt");
@@ -300,7 +310,7 @@ export default class BigTwo extends Phaser.Scene {
                 cards.push(selectedCards[i].stringify());
             }
 
-            this.socket.emit('playedCards', cards, this.socket.id, this.playerNumber,
+            this.socket.emit('playedCards', cards, this.playerNumber, this.room,
                 (response) => {
                     this.validPlay(response);
                 });
@@ -330,7 +340,7 @@ export default class BigTwo extends Phaser.Scene {
      */
     passTurn() {
         this.turn = false;
-        this.socket.emit('passTurn', this.socket.id, this.playerNumber);
+        this.socket.emit('passTurn', this.room);
         this.togglePlayPassButtons();
     }
 
