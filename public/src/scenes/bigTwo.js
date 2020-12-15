@@ -216,7 +216,7 @@ export default class BigTwo extends Phaser.Scene {
         // Get the other player's hand sizes and draw the cards onto the scene
         this.socket.on('handSizes', (handSizes) => {
             handSizes.splice(self.playerNumber, 1);
-            console.log(handSizes);
+            console.log(`Handsizes: ${handSizes}`);
             let key = 'cardBacks';
             let spriteName = 'cardBack_red1.png';
             if (handSizes.length >= 1) {
@@ -282,15 +282,17 @@ export default class BigTwo extends Phaser.Scene {
      * the current game
      */
     startGame() {
-        this.socket.emit('startGame', this.room, response);
-        if (response && response === true) {
-            this.dealBtn.disableInteractive();
-            this.dealBtn.setVisible(false);
-            console.log("Client: Cards Dealt");
-        }
-        else {
-            console.log('Failed to deal cards');
-        }
+        this.socket.emit('startGame', this.room, (response) => {
+            console.log(response);
+            if (response && response === true) {
+                this.dealBtn.disableInteractive();
+                this.dealBtn.setVisible(false);
+                console.log("Client: Cards Dealt");
+            }
+            else {
+                console.log('Failed to deal cards');
+            }
+        });
     }
 
     /**

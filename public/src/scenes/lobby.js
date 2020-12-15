@@ -160,7 +160,7 @@ export default class Lobby extends Phaser.Scene {
 
                 // Set properties from item value
                 cellContainer.setMinSize(width, height); // Size might changed in this demo
-                cellContainer.getElement('text').setText(`${item.username}\'s Game`); // Set text of text object
+                cellContainer.getElement('text').setText(`${item}\'s Game`); // Set text of text object
                 cellContainer.getElement('background').setStrokeStyle(2, COLOR_DARK).setDepth(0);
                 return cellContainer;
             },
@@ -227,7 +227,7 @@ export default class Lobby extends Phaser.Scene {
             if (response.status) {
                 console.log(`Joining ${response.room}`);
                 this.room = response.room;
-                this.startBigTwo(this.room, response.playerNumber);
+                this.startBigTwo(room, response.playerNumber);
             }
             else {
                 console.log('Failed to join room');

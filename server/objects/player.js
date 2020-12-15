@@ -9,7 +9,7 @@ module.exports = class Player {
         this.id = id;
         this.username = username;
         this.hand = new Hand();
-        this.playerNumber = number;
+        this.playerNumber = -1;
         this.score = [0, 0, 0, 0];
         this.gameRoom = '';
     }

@@ -40,7 +40,7 @@ module.exports = class GameRoom {
             return false;
         }
         this.players.push(player);
-        this.numberOfPlayers++:
+        this.numberOfPlayers++;
         console.log(`${player} joined, players in room ${this.numberOfPlayers}`);
         return true;
     }
@@ -65,23 +65,21 @@ module.exports = class GameRoom {
     generatePlayerOrder() {
         // Find the player who has the three of spades
         let firstPlayer = 0;
-        for (const id in this.players) {
-            let card = this.players[id].getHand().getCard(0);
+        this.players.forEach((player) => {
+            let card = player.getHand().getCard(0);
             if (card.value == 3 && card.suitValue == 0) {
-                firstPlayer = this.players[id].playerNumber;
-                this.turnOrder.push(id);
-                console.log(`Player ${id} - ${firstPlayer} goes first`);
-                break;
+                firstPlayer = player.playerNumber;
+                this.turnOrder.push(player.id);
+                console.log(`Player ${player.id} - ${firstPlayer} goes first`);
             }
-        }
-
+        });
         // Generate the remainder of the players
         for (let i = 1; i < 4; i++) {
             firstPlayer++;
             if (firstPlayer % 5 == 0) {
                 firstPlayer = 1;
             }
-            this.turnOrder.push(this.getPlayerID(firstPlayer % 5));
+            this.turnOrder.push(this.players[firstPlayer % 5]);
         }
 
         this.currentTurn = this.turnOrder[this.playerTurn];
@@ -118,10 +116,9 @@ module.exports = class GameRoom {
     /**
      * Attempts to plays the cards of the player
      * @param {Array} cards : An array of card objects the player intends to play
-     * @param {string} id : The string id of the player
      * @returns {boolean} : True if the cards were played
      */
-    playCards(cards, id, playerNumber) {
+    playCards(cards, playerNumber) {
         // Call the Game Manager to see if the play is valid
         if (this.checkIfValidPlayHand(cards)) {
             if (this.players[playerNumber - 1].playCards(cards)) {
@@ -299,12 +296,41 @@ module.exports = class GameRoom {
     }
 
     /**
-     * Searches for and returns the player based on their id
-     * @param {string} id : The id of the player we want to find
-     * @returns {Player} : If found, will return the player, returns undefined otherwise
+     * Sets the previously played cards by a player and the turn number to be the set 
+     * of cards and number given
+     * @param {Array} cards : An array of cards representing the last play
+     * @param {integer} turnNumber : The turn number of which the play was made
      */
-    findPlayerById(id) {
-        return this.players[id];
+    setPreviouslyPlayed(cards, turnNumber) {
+        this.lastPlayed = cards;
+        this.lastPlayedTurn = turnNumber;
+    }
+
+    /**
+     * Checks if the player has finished the game by emptying their hand
+     * @param {integer} playerNumber : The player number of the player who we are checking
+     * @returns {boolean} : True if the player has finished, false otherwise
+     */
+    checkIfWon(playerNumber) {
+        if (this.players[playerNumber - 1].getHand().isEmpty()) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Updates the scores and the score of the player and removes them from the turn order
+     * @param {integer} playerNumber : The player number of the player who finished
+     * @returns {integer} : the place the player finished at
+     */
+    playerWon(playerNumber) {
+        let playerID = this.players[playerNumber - 1].id;
+        this.placed.push(playerID);
+        let place = this.placed.length;
+        this.players[playerNumber - 1].updateScore(place);
+        this.removeFromTurnOrder(playerID);
+        this.decrementPlayerTurn();
+        return place;
     }
 
     /****************************************************************************/
@@ -493,43 +519,5 @@ module.exports = class GameRoom {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Sets the previously played cards by a player and the turn number to be the set 
-     * of cards and number given
-     * @param {Array} cards : An array of cards representing the last play
-     * @param {integer} turnNumber : The turn number of which the play was made
-     */
-    setPreviouslyPlayed(cards, turnNumber) {
-        this.lastPlayed = cards;
-        this.lastPlayedTurn = turnNumber;
-    }
-
-    /**
-     * Checks if the player has finished the game by emptying their hand
-     * @param {integer} playerNumber : The player number of the player who we are checking
-     * @returns {boolean} : True if the player has finished, false otherwise
-     */
-    checkIfWon(playerNumber) {
-        if (this.players[playerNumber - 1].getHand().isEmpty()) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Updates the scores and the score of the player and removes them from the turn order
-     * @param {integer} playerNumber : The player number of the player who finished
-     * @returns {integer} : the place the player finished at
-     */
-    playerWon(playerNumber) {
-        let playerID = this.players[playerNumber - 1].id;
-        this.placed.push(playerID);
-        let place = this.placed.length;
-        this.players[playerNumber - 1].updateScore(place);
-        this.removeFromTurnOrder(playerID);
-        this.decrementPlayerTurn();
-        return place;
     }
 }

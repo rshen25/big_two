@@ -73,8 +73,8 @@ function onConnect(socket) {
  * @param {Socket} socket : socket object for the given player that has disconnected
  */
 function onDisconnect(socket) {
-    io.emit('otherPlayerDisconnect', socket.id);
-    GameManager.disconnectPlayer(socket.id);
+    // io.emit('otherPlayerDisconnect', socket.id);
+    // GameManager.disconnectPlayer(socket.id);
 }
 
 function onDisconnectRoom(id, username, room) {
@@ -86,7 +86,7 @@ function onDisconnectRoom(id, username, room) {
  */
 function startGame(room) {
     // Find and get room
-    let gameRoom = this.rooms.get(room);
+    let gameRoom = getRoom(room);
     let players = gameRoom.getPlayers();
 
     if (gameRoom && players) {
@@ -98,11 +98,12 @@ function startGame(room) {
             handSizes.push(player.getHand().hand.length);
         });
 
-        io.to(room).emit('handSizes', handSizes);
+        io.to(gameRoom.roomID).emit('handSizes', handSizes);
+        console.log('hand sizes dealt');
 
         console.log('Server: Cards dealt');
 
-        io.to(room).emit('nextTurn', 0);
+        io.to(gameRoom.roomID).emit('nextTurn', 0);
         return true;
     }
     return false;
@@ -117,7 +118,7 @@ function startGame(room) {
  * @param {integer} playerNumber : The player number of the client
  */
 function cardPlayed(cards, id, playerNumber, room, callback) {
-    let gameRoom = rooms.get(room);
+    let gameRoom = getRoom(room);
     console.log(cards);
     // See if the play is valid
     if (gameRoom.playCards(cards, id, playerNumber)) {
@@ -130,14 +131,14 @@ function cardPlayed(cards, id, playerNumber, room, callback) {
             io.to(id).emit('hasWon', place, gameRoom.getPlayerScore(playerNumber));
             if (place == 3) {
                 let lastID = gameRoom.turnOrder[0];
-                place = gameRoom.playerWon(GameManager.turnOrder[0]);
+                place = gameRoom.playerWon(gameRoom.turnOrder[0]);
                 io.to(lastID).emit('hasWon', place, gameRoom.getPlayerScoreByID(lastID));
-                io.to(room).emit('gameOver', gameRoom.getScores());
+                io.to(gameRoom.roomID).emit('gameOver', gameRoom.getScores());
             }
         }
 
-        io.to(room).emit('otherPlayedCards', cards, id, playerNumber);
-        io.to(room).emit('nextTurn', gameRoom.currentTurn, cards);
+        io.to(gameRoom.roomID).emit('otherPlayedCards', cards, id, playerNumber);
+        io.to(gameRoom.roomID).emit('nextTurn', gameRoom.currentTurn, cards);
         console.log(`Last Played Turn: ${gameRoom.lastPlayedTurn}`);
     }
     else {
@@ -154,7 +155,7 @@ function playerPass(room) {
     // Send it to all players
     if (gameRoom) {
         let currentPlayerNumber = gameRoom.playPass();
-        io.to(room).emit('nextTurn', currentPlayerNumber, gameRoom.lastPlayed);
+        io.to(gameRoom.roomID).emit('nextTurn', currentPlayerNumber, gameRoom.lastPlayed);
     }
 }
 
@@ -168,8 +169,8 @@ function getLobbyData() {
     let data = [];
     console.log(`Number of rooms: ${rooms.size}, rooms: ${rooms}`);
     if (rooms.size > 0) {
-        for (let room of rooms.values()) {
-            data.push(room);
+        for (let gameRoom of rooms.values()) {
+            data.push(gameRoom.roomID);
         }
     }
     return data;
@@ -183,7 +184,7 @@ function getLobbyData() {
  * @returns {boolean} : True if the room was successfully created, false otherwise
  */
 function createNewRoom(socket, username) {
-    let player = users.get(socket.id);
+    let player = getPlayer(socket.id);
     if (!player) {
         console.log(`Player ${socket.id} not found`);
         return false;
@@ -206,11 +207,11 @@ function createNewRoom(socket, username) {
  * @param {Room} room : The room we want to join
  */
 function joinRoom(socket, room) {
-    let roomToJoin = rooms.get(room);
+    let roomToJoin = getRoom(room);
     if (!roomToJoin) {
         return { status: false, room: undefined };
     }
-    let player = users.get(socket.id);
+    let player = getPlayer(socket.id);
     if (!player) {
         return { status: false, room: undefined };
     }
@@ -220,9 +221,10 @@ function joinRoom(socket, room) {
     }
 
     // Add the player's socket to the socket room
-    socket.join(roomToJoin.username);
-    io.to(roomToJoin.username).emit('onJoinRoom', player);
-    return { status: true, room: roomToJoin.username, playerNumber: roomToJoin.getNumberPlayers() };
+    player.setGameRoom(room);
+    socket.join(roomToJoin.roomID);
+    io.to(roomToJoin.roomID).emit('onJoinRoom', player);
+    return { status: true, room: roomToJoin.roomID, playerNumber: roomToJoin.getNumberPlayers() };
 }
 
 /**
@@ -230,7 +232,7 @@ function joinRoom(socket, room) {
  * @param {string} id : The id of the player we are looking for
  */
 function getPlayer(id) {
-    let player = this.users.get(id);
+    let player = users.get(id);
     if (!player) {
         console.log(`${id} not found`);
         return null;
@@ -243,7 +245,7 @@ function getPlayer(id) {
  * @param {string} roomName : The name of the room we are searching for
  */
 function getRoom(roomName) {
-    let room = this.rooms.get(roomName);
+    let room = rooms.get(roomName);
     if (!room) {
         console.log(`${roomName} not found`);
         return null;
