@@ -87,10 +87,13 @@ function onDisconnectRoom(id, username, room) {
 function startGame(room) {
     // Find and get room
     let gameRoom = getRoom(room);
-    let players = gameRoom.getPlayers();
 
-    if (gameRoom && players) {
-        hands = gameRoom.dealCards();
+    if (gameRoom) {
+        let players = gameRoom.getPlayers();
+        if (!players) {
+            return false;
+        }
+        hands = gameRoom.startGame();
         let handSizes = [];
         // Send the hands to each player
         players.forEach((player) => {
@@ -103,7 +106,7 @@ function startGame(room) {
 
         console.log('Server: Cards dealt');
 
-        io.to(gameRoom.roomID).emit('nextTurn', 0);
+        io.to(gameRoom.roomID).emit('nextTurn', gameRoom.currentTurn);
         return true;
     }
     return false;
@@ -120,8 +123,9 @@ function startGame(room) {
 function cardPlayed(cards, id, playerNumber, room, callback) {
     let gameRoom = getRoom(room);
     console.log(cards);
+    console.log(`PlayerNumber: ${playerNumber} played`)
     // See if the play is valid
-    if (gameRoom.playCards(cards, id, playerNumber)) {
+    if (gameRoom.playCards(cards, playerNumber)) {
         // Send the play to all other players
         callback(cards);
 
@@ -138,7 +142,7 @@ function cardPlayed(cards, id, playerNumber, room, callback) {
         }
 
         io.to(gameRoom.roomID).emit('otherPlayedCards', cards, id, playerNumber);
-        io.to(gameRoom.roomID).emit('nextTurn', gameRoom.currentTurn, cards);
+        io.to(gameRoom.roomID).emit('nextTurn', gameRoom.getCurrentPlayerTurn(), cards);
         console.log(`Last Played Turn: ${gameRoom.lastPlayedTurn}`);
     }
     else {
@@ -193,6 +197,7 @@ function createNewRoom(socket, username) {
     if (!newRoom) {
         return false;
     }
+    player.setPlayerNumber(1);
     rooms.set(username, newRoom);
 
     // Add the player to the socket room
@@ -222,6 +227,7 @@ function joinRoom(socket, room) {
 
     // Add the player's socket to the socket room
     player.setGameRoom(room);
+    player.setPlayerNumber(roomToJoin.getNumberPlayers());
     socket.join(roomToJoin.roomID);
     io.to(roomToJoin.roomID).emit('onJoinRoom', player);
     return { status: true, room: roomToJoin.roomID, playerNumber: roomToJoin.getNumberPlayers() };

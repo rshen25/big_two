@@ -16,14 +16,14 @@ module.exports = class GameRoom {
     constructor(player, username) {
         this.deck = new Deck(this.suitRanking);
         this.roomID = username;            // The room's name
-        this.numberOfPlayers = 0;           // The number of players in the game
+        this.numberOfPlayers = 1;           // The number of players in the game
         this.players = [player];                  // Players object to hold the players
 
         this.lastPlayedTurn = 0;      // The turn where the last play was made
         this.lastPlayed = [];         // The cards that were played last
         this.currentTurn = -1;              // The current player's id
         this.turnOrder = [];                // The order which players take their turns
-        this.playerTurn = 0;
+        this.playerTurn = 0;                // The current turn is the player in this positiion in the turn order
         this.turnNumber = 0;                // The number of turns that have elapsed
         this.placed = [];                   // The place each player finished
         return this.instance;
@@ -41,7 +41,7 @@ module.exports = class GameRoom {
         }
         this.players.push(player);
         this.numberOfPlayers++;
-        console.log(`${player} joined, players in room ${this.numberOfPlayers}`);
+        console.log(`${player.id} joined, players in room ${this.numberOfPlayers}`);
         return true;
     }
 
@@ -79,7 +79,7 @@ module.exports = class GameRoom {
             if (firstPlayer % 5 == 0) {
                 firstPlayer = 1;
             }
-            this.turnOrder.push(this.players[firstPlayer % 5]);
+            this.turnOrder.push(this.players[firstPlayer - 1].id);
         }
 
         this.currentTurn = this.turnOrder[this.playerTurn];
@@ -122,9 +122,8 @@ module.exports = class GameRoom {
         // Call the Game Manager to see if the play is valid
         if (this.checkIfValidPlayHand(cards)) {
             if (this.players[playerNumber - 1].playCards(cards)) {
-                this.setPreviouslyPlayed(cards, this.turnNumber);
+                this.setPreviouslyPlayed(cards, this.playerTurn);
                 this.incrementTurnCount();
-                this.incrementPlayerTurn();
                 this.currentTurn = this.getCurrentPlayerTurn();
                 return true;
             }
@@ -140,16 +139,13 @@ module.exports = class GameRoom {
      */
     playPass() {
         this.incrementTurnCount();
-        this.incrementPlayerTurn();
         this.currentTurn = this.getCurrentPlayerTurn();
-        console.log(`Turn Number length: ${this.turnOrder.length}`);
         console.log(`Last Played Turn Number: ${this.lastPlayedTurn}`);
 
-        console.log(`Last Played Turn: ${this.lastPlayedTurn % this.turnOrder.length} , ID: ${this.turnOrder[this.lastPlayedTurn % this.turnOrder.length]}`);
         console.log(`Current ID's Turn: ${this.currentTurn}`);
         // If every other player passes their turn and it goes back to the last player
         // to play their cards, we reset last played so the player make a new play
-        if (this.turnOrder[this.playerTurn] == this.currentTurn) {
+        if (this.turnOrder[this.lastPlayedTurn % this.turnOrder.length] == this.currentTurn) {
             this.lastPlayed = [];
             console.log(`Everyone passed: ${this.currentTurn}`);
         }
@@ -160,7 +156,7 @@ module.exports = class GameRoom {
     /**
      * Deals the cards to all the players in the game
      */
-    dealCards() {
+    startGame() {
         this.resetGame();
         this.shuffle();
 
@@ -170,6 +166,8 @@ module.exports = class GameRoom {
         this.players.forEach((player) => {
             player.getHand().sortByValue();
         })
+
+        this.generatePlayerOrder();
 
         return this.players;
     }
@@ -206,21 +204,14 @@ module.exports = class GameRoom {
      * @returns {string} : The player id of the current turn's player
      */
     getCurrentPlayerTurn() {
-        console.log(`Current Turn Pos: ${this.playerTurn}`);
         return this.turnOrder[this.playerTurn];
     }
 
     /**
-     * Increments the number of turns
+     * Increments the turn counter and the player turn tracker
      */
     incrementTurnCount() {
         this.turnNumber++;
-    }
-
-    /**
-    * Increments the player turn tracker
-    */
-    incrementPlayerTurn() {
         this.playerTurn++;
         this.playerTurn = this.playerTurn % this.turnOrder.length;
     }
@@ -301,9 +292,9 @@ module.exports = class GameRoom {
      * @param {Array} cards : An array of cards representing the last play
      * @param {integer} turnNumber : The turn number of which the play was made
      */
-    setPreviouslyPlayed(cards, turnNumber) {
+    setPreviouslyPlayed(cards, playerTurn) {
         this.lastPlayed = cards;
-        this.lastPlayedTurn = turnNumber;
+        this.lastPlayedTurn = playerTurn;
     }
 
     /**
