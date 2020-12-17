@@ -1,13 +1,6 @@
 const server = require('express')();
 const http = require('http').createServer(server);
-const io = require('socket.io')(http, {
-    cors: {
-        origin: "http://localhost:8080",
-        methods: ["GET", "POST"],
-        allowedHeaders: ["my-custom-header"],
-        credential: true
-    }
-});
+const io = require('socket.io')(http);
 const GameRoom = require('./server/objects/gameRoom.js');
 const Player = require('./server/objects/player.js');
 
@@ -34,24 +27,9 @@ function onConnect(socket) {
     let player = new Player(socket.id, username);
     users.set(socket.id, player);
 
-    // Deal cards to players when button is pressed by host
-    socket.on('startGame', (room, callback) => {
-        callback(startGame(room));
-    });
-
-    // When a card is played by the client
-    socket.on('playedCards', (cards, playerNumber, room, callback) => {
-        cardPlayed(cards, socket.id, playerNumber, room, callback);
-    });
-
-    // When a client passes their turn
-    socket.on('passTurn', playerPass);
-
-    // When the client disconnects
-    socket.on('disconnect', onDisconnect);
-
-    socket.on('disconnectRoom', onDisconnectRoom);
-
+    /**********************************************
+    * Lobby event listeners
+    *********************************************/
     // When the client requests lobby information --- TODO: Add to the actual server
     socket.on('requestLobbyData', (callback) => {
         callback(getLobbyData());
@@ -66,6 +44,34 @@ function onConnect(socket) {
     socket.on('joinRoom', (room, callback) => {
         callback(joinRoom(socket, room));
     });
+
+    // When the client disconnects
+    socket.on('disconnect', onDisconnect);
+
+    socket.on('logout', () => {
+        onLogout(socket);
+    });
+
+    /**********************************************
+     * Room event listeners
+     *********************************************/
+    // Deal cards to players when button is pressed by host
+    socket.on('startGame', (room, callback) => {
+        callback(startGame(room));
+    });
+
+    // When a card is played by the client
+    socket.on('playedCards', (cards, playerNumber, room, callback) => {
+        cardPlayed(cards, socket.id, playerNumber, room, callback);
+    });
+
+    // When a client passes their turn
+    socket.on('passTurn', playerPass);
+
+    // When a client leaves a room
+    socket.on('leaveRoom', (room, callback) => {
+        callback(onLeaveRoom(socket, room));
+    });
 }
 
 /**
@@ -73,14 +79,97 @@ function onConnect(socket) {
  * @param {Socket} socket : socket object for the given player that has disconnected
  */
 function onDisconnect(socket) {
+    // remove them from the 
+    // Log the user out
     // io.emit('otherPlayerDisconnect', socket.id);
     // GameManager.disconnectPlayer(socket.id);
 }
 
-function onDisconnectRoom(id, username, room) {
-
+/********************************************************
+ * Lobby events
+ *******************************************************/
+/**
+ * TODO: Add to real server
+ * Returns an array of all the rooms that have been created and have users in it
+ * @returns {Array} : An array of all the rooms that are created
+ */
+function getLobbyData() {
+    // Convert the room map to an array
+    let data = [];
+    console.log(`Number of rooms: ${rooms.size}, rooms: ${rooms}`);
+    if (rooms.size > 0) {
+        for (let gameRoom of rooms.values()) {
+            data.push(gameRoom.roomID);
+        }
+    }
+    return data;
 }
 
+/**
+ * TODO: atrs
+ * Creates a new room for the client to join
+ * @param {Socket} socket : The socket of the player creating the room
+ * @param {string} username : The username of the player creating the room
+ * @returns {boolean} : True if the room was successfully created, false otherwise
+ */
+function createNewRoom(socket, username) {
+    let player = getPlayer(socket.id);
+    if (!player) {
+        console.log(`Player ${socket.id} not found`);
+        return false;
+    }
+    let newRoom = new GameRoom(player, username);
+    if (!newRoom) {
+        return false;
+    }
+    player.setPlayerNumber(1);
+    rooms.set(username, newRoom);
+
+    // Add the player to the socket room
+    socket.join(username);
+    return true;
+}
+
+/**
+ * TODO: atrs
+ * Attempts to join the client to the given room, if possible
+ * @param {Socket} socket : The socket of the joining player
+ * @param {Room} room : The room we want to join
+ */
+function joinRoom(socket, room) {
+    let roomToJoin = getRoom(room);
+    if (!roomToJoin || roomToJoin.getNumberPlayers() >= 4 || roomToJoin.isInProgress) {
+        return { status: false, room: undefined };
+    }
+    let player = getPlayer(socket.id);
+    if (!player) {
+        return { status: false, room: undefined };
+    }
+
+    if (!roomToJoin.addPlayer(player)) {
+        return { status: false, room: undefined };
+    }
+
+    // Add the player's socket to the socket room
+    player.setGameRoom(room);
+    player.setPlayerNumber(roomToJoin.getNumberPlayers());
+    socket.join(roomToJoin.roomID);
+    io.to(roomToJoin.roomID).emit('onJoinRoom', player);
+    return { status: true, room: roomToJoin.roomID, playerNumber: roomToJoin.getNumberPlayers() };
+}
+
+function onLogout(socket) {
+    // Remove the user from the list of users
+    users.delete(socket.id);
+
+    // TODO: Log out and redirect to login - on non-test server
+    console.log('logged out');
+    onDisconnect(socket);
+}
+
+/********************************************************
+ * Room events
+ *******************************************************/
 /**
  * Deals cards to all the connected players and sends their hands to the respective client
  */
@@ -90,7 +179,7 @@ function startGame(room) {
 
     if (gameRoom) {
         let players = gameRoom.getPlayers();
-        if (!players) {
+        if (!players || players.length < 2) {
             return false;
         }
         hands = gameRoom.startGame();
@@ -164,76 +253,6 @@ function playerPass(room) {
 }
 
 /**
- * TODO: Add to real server
- * Returns an array of all the rooms that have been created and have users in it
- * @returns {Array} : An array of all the rooms that are created
- */
-function getLobbyData() {
-    // Convert the room map to an array
-    let data = [];
-    console.log(`Number of rooms: ${rooms.size}, rooms: ${rooms}`);
-    if (rooms.size > 0) {
-        for (let gameRoom of rooms.values()) {
-            data.push(gameRoom.roomID);
-        }
-    }
-    return data;
-}
-
-/**
- * TODO: atrs
- * Creates a new room for the client to join
- * @param {Socket} socket : The socket of the player creating the room
- * @param {string} username : The username of the player creating the room
- * @returns {boolean} : True if the room was successfully created, false otherwise
- */
-function createNewRoom(socket, username) {
-    let player = getPlayer(socket.id);
-    if (!player) {
-        console.log(`Player ${socket.id} not found`);
-        return false;
-    }
-    let newRoom = new GameRoom(player, username);
-    if (!newRoom) {
-        return false;
-    }
-    player.setPlayerNumber(1);
-    rooms.set(username, newRoom);
-
-    // Add the player to the socket room
-    socket.join(username);
-    return true;
-}
-
-/**
- * TODO: atrs
- * Attempts to join the client to the given room, if possible
- * @param {Socket} socket : The socket of the joining player
- * @param {Room} room : The room we want to join
- */
-function joinRoom(socket, room) {
-    let roomToJoin = getRoom(room);
-    if (!roomToJoin) {
-        return { status: false, room: undefined };
-    }
-    let player = getPlayer(socket.id);
-    if (!player) {
-        return { status: false, room: undefined };
-    }
-
-    if (!roomToJoin.addPlayer(player)) {
-        return { status: false, room: undefined };
-    }
-
-    // Add the player's socket to the socket room
-    player.setGameRoom(room);
-    player.setPlayerNumber(roomToJoin.getNumberPlayers());
-    socket.join(roomToJoin.roomID);
-    io.to(roomToJoin.roomID).emit('onJoinRoom', player);
-    return { status: true, room: roomToJoin.roomID, playerNumber: roomToJoin.getNumberPlayers() };
-}
-
-/**
  * Searches the player map for the given id, if found it will return the player object, otherwise null
  * @param {string} id : The id of the player we are looking for
  */
@@ -257,4 +276,20 @@ function getRoom(roomName) {
         return null;
     }
     return room;
+}
+
+/**
+ * When a client leaves a room
+ * @param {Socket} socket : The socket of the client
+ * @param {string} room : The name of the room the client is leaving from
+ * @returns {boolean} : Returns true if the leave operation was successful, false otherwise
+ */
+function onLeaveRoom(socket, room) {
+    socket.leave(room);
+    let client = getPlayer(socket.id);
+    if (!client) {
+        return false;
+    }
+    client.setGameRoom(undefined);
+    return true;
 }

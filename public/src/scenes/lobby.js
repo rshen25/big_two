@@ -71,6 +71,15 @@ export default class Lobby extends Phaser.Scene {
             header: 'Available Rooms',
         }
 
+        // Create the logout button
+        this.logoutBtn = new Button(this, width - 115, 25, 'redButton',
+            'red_button_normal.png', 'red_button_pressed.png', 'red_button_hover.png',
+            'LOG OUT', style);
+
+        this.logoutBtn.setButtonScale(0.7, 0.7);
+
+        this.logoutBtn.on('pointerdown', () => { this.logout() });
+
         this.roomTable = this.rexUI.add.gridTable({
             x: config.x,
             y: config.y,
@@ -267,5 +276,13 @@ export default class Lobby extends Phaser.Scene {
             username: this.username, socket: this.socket,
             room: room, playerNumber: playerNumber
         });
+    }
+
+    /**
+     * Leaves the lobby and logs the user out
+     */
+    logout() {
+        // Signals the server to log the client out and to redirect to login page
+        this.socket.emit('logout');
     }
 }

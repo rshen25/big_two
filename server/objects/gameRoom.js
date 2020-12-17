@@ -19,13 +19,14 @@ module.exports = class GameRoom {
         this.numberOfPlayers = 1;           // The number of players in the game
         this.players = [player];                  // Players object to hold the players
 
-        this.lastPlayedTurn = 0;      // The turn where the last play was made
-        this.lastPlayed = [];         // The cards that were played last
+        this.lastPlayedTurn = 0;            // The turn where the last play was made
+        this.lastPlayed = [];               // The cards that were played last
         this.currentTurn = -1;              // The current player's id
         this.turnOrder = [];                // The order which players take their turns
         this.playerTurn = 0;                // The current turn is the player in this positiion in the turn order
         this.turnNumber = 0;                // The number of turns that have elapsed
         this.placed = [];                   // The place each player finished
+        this.isInProgress = false;          // Whether a game is in progress or not
         return this.instance;
     }
 

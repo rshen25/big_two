@@ -23,6 +23,7 @@ export default class BigTwo extends Phaser.Scene {
         this.hands = [];
         this.gameRules = new Rules();
         this.turn = false;
+        this.isGameStart = false;
     }
 
     init(data) {
@@ -109,11 +110,12 @@ export default class BigTwo extends Phaser.Scene {
 
         // Create a deal cards button to start dealing cards to the players
         let style = {
-            fontSize: 18, fontFamily: 'Trebuchet MS', color: '#00ffff'
+            fontSize: 18, fontFamily: 'Trebuchet MS', color: '#ffffff'
         };
         this.dealBtn = new Button(self, width / 2, height / 2, 'redButton',
             "red_button_normal.png", "red_button_pressed.png", "red_button_hover.png",
             'START GAME', style);
+        this.dealBtn.setButtonScale(0.7, 0.7);
         if (this.isHost) {
             this.dealBtn.setVisible(true);
         }
@@ -126,11 +128,11 @@ export default class BigTwo extends Phaser.Scene {
         /**
          * Create the play cards button
          */
-        style = { fontSize: 18, fontFamily: 'Trebuchet MS' };
+        style = { fontSize: 16, fontFamily: 'Trebuchet MS' };
         this.playBtn = new Button(self, width - 50, height - 80, 'yellowButton',
             "yellow_button_normal.png", "yellow_button_pressed.png", "yellow_button_hover.png",
             'PLAY', style);
-        this.playBtn.sprite.setScale(0.5, 0.5);
+        this.playBtn.setButtonScale(0.5, 0.5);
 
         this.playBtn.on('pointerdown', this.playCards, this);
 
@@ -140,25 +142,26 @@ export default class BigTwo extends Phaser.Scene {
         this.passBtn = new Button(self, width - 50, height - 30, 'yellowButton',
             "yellow_button_normal.png", "yellow_button_pressed.png", "yellow_button_hover.png",
             'PASS', style);
-        this.passBtn.sprite.setScale(0.5, 0.5);
+        this.passBtn.setButtonScale(0.5, 0.5);
 
         this.passBtn.on('pointerdown', this.passTurn, this);
 
         this.togglePlayPassButtons();
 
         /**
-         * Server listener code
+         * Create the leave room button
          */
-        // this.socket = io("http://localhost:3000");
-        /**
-        this.socket = io("localhost:8080"
-            withCredentials: true,
-            extraHeaders: {
-                "my-custom-header": "abcd"
-            }
-            });
-        */
+        this.leaveRoomBtn = new Button(self, width - 50, 30, 'redButton',
+            "red_button_normal.png", "red_button_pressed.png", "red_button_hover.png",
+            'LEAVE ROOM', style);
 
+        this.leaveRoomBtn.setButtonScale(0.5, 0.5);
+
+        this.leaveRoomBtn.on('pointerdown', self.leaveRoom, self);
+
+        /******************************
+         * Server listener code
+         *****************************/
         this.socket.on('onJoinRoom', (username) => {
             console.log(`${username} has joined the room.`);
         });
@@ -174,6 +177,9 @@ export default class BigTwo extends Phaser.Scene {
         this.socket.on('otherPlayerJoined', (id) => {
             this.otherPlayers += 1;
             console.log(`User ${id} joined.`);
+            if (this.otherPlayers >= 2 && this.isHost) {
+                this.dealBtn.setVisibility(true);
+            }
         });
 
         this.socket.on('otherPlayerDisconnect', (id) => {
@@ -196,6 +202,8 @@ export default class BigTwo extends Phaser.Scene {
         this.socket.on('handDealt', (data) => {
             console.log(self.hand);
             console.log(data);
+            this.isGameStart = true;
+            this.toggleLeaveButton();
             let spriteName;
             let startX = self.hand.x - (self.hand.width / 2) + 30;
             for (let i = 0; i < data.length; i++) {
@@ -357,6 +365,20 @@ export default class BigTwo extends Phaser.Scene {
         else {
             this.playBtn.disable();
             this.passBtn.disable();
+        }
+    }
+
+    /**
+    * Toggles the leave room button depending if it is the game has started
+    */
+    toggleLeaveButton() {
+        if (this.isGameStart) {
+            this.leaveRoomBtn.disable();
+            this.leaveRoomBtn.setVisibility(false);
+        }
+        else {
+            this.leaveRoomBtn.enable();
+            this.leaveRoomBtn.setVisibility(true);
         }
     }
 
@@ -543,6 +565,21 @@ export default class BigTwo extends Phaser.Scene {
             this.dealBtn.setInteractive().setVisible(true);
         }
         this.turn = false;
+        this.isGameStart = false;
         this.togglePlayPassButtons();
+        this.toggleLeaveButton();
+    }
+
+    /**
+     * Emits to the server to leave the current Big Two room, if ack is received then the client
+     * will go back to the lobby
+     */
+    leaveRoom() {
+        this.socket.emit('leaveRoom', this.room, (response) => {
+            if (response === true) {
+                // Go back to the lobby
+                this.scene.start('Lobby');
+            }
+        });
     }
 }
