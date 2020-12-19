@@ -15,7 +15,6 @@ export default class BigTwo extends Phaser.Scene {
         });
         this.isHost = false;
         this.playerNumber = -1;
-        this.otherPlayers = 0;
         this.cardsToBePlayed = [];
         this.westHand = null;
         this.northHand = null;
@@ -31,6 +30,7 @@ export default class BigTwo extends Phaser.Scene {
         this.socket = data.socket;
         this.playerNumber = data.playerNumber;
         this.room = data.room;
+        this.otherPlayers = data.players;
         if (this.playerNumber == 1) {
             this.isHost = true;
         }
@@ -94,7 +94,13 @@ export default class BigTwo extends Phaser.Scene {
         // east player
         this.eastHand.renderOutline(this);
 
+        // Set the player numbers for the hands
+        this.hand.playerNumber = this.playerNumber;
         let pNumber = this.playerNumber;
+        this.westHand.playerNumber = (++pNumber % 5 === 0) ? ++pNumber % 5 : pNumber % 5;
+        this.northHand.playerNumber = (++pNumber % 5 === 0) ? ++pNumber % 5: pNumber % 5;
+        this.eastHand.playerNumber = (++pNumber % 5 === 0) ? ++pNumber % 5: pNumber % 5;
+
         let players = [];
         for (let i = 1; i < 4; i++) {
             pNumber++;
@@ -104,14 +110,27 @@ export default class BigTwo extends Phaser.Scene {
             players.push(pNumber);
         }
 
-        this.westHand.playerNumber = players[0];
-        this.northHand.playerNumber = players[1];
-        this.eastHand.playerNumber = players[2];
-
-        // Create a deal cards button to start dealing cards to the players
         let style = {
             fontSize: 18, fontFamily: 'Trebuchet MS', color: '#ffffff'
         };
+        let usernameTextStyle = { fontSize: 14, fontFamily: 'Trebuchet MS', color: '#ffffff' }
+        // Add username text for the main client
+        this.usernameText = this.add.text(10, height - 50, this.username, usernameTextStyle);
+        this.westUsernameText = this.add.text(10, 100, '', usernameTextStyle);
+        this.northUsernameText = this.add.text(150 , 110, '', usernameTextStyle);
+        this.eastUsernameText = this.add.text(width - 90, 100, '', usernameTextStyle);
+
+        this.usernameTexts = [this.westUsernameText, this.northUsernameText, this.eastUsernameText];
+
+        // Set the username for players that are already in the room
+        console.log('Other Players: ' + this.otherPlayers);
+        if (this.otherPlayers) {
+            this.otherPlayers.forEach((player) => {
+                this.setUsernames(player.username, player.playerNumber);
+            });
+        }
+
+        // Create a deal cards button to start dealing cards to the players
         this.dealBtn = new Button(self, width / 2, height / 2, 'redButton',
             "red_button_normal.png", "red_button_pressed.png", "red_button_hover.png",
             'START GAME', style);
@@ -162,8 +181,8 @@ export default class BigTwo extends Phaser.Scene {
         /******************************
          * Server listener code
          *****************************/
-        this.socket.on('onJoinRoom', (username) => {
-            console.log(`${username} has joined the room.`);
+        this.socket.on('onJoinRoom', (username, playerNumber) => {
+            self.setUsernames(username, playerNumber);
         });
 
         this.socket.on('playerNumber',  (playerNumber) => {
@@ -174,17 +193,13 @@ export default class BigTwo extends Phaser.Scene {
             }
         });
 
-        this.socket.on('otherPlayerJoined', (id) => {
-            this.otherPlayers += 1;
-            console.log(`User ${id} joined.`);
-            if (this.otherPlayers >= 2 && this.isHost) {
-                this.dealBtn.setVisibility(true);
-            }
+        // TODO: remove player from others players and remove their username
+        this.socket.on('otherPlayerDisconnect', (username) => {
+            console.log(`User ${username} left.`);
         });
 
-        this.socket.on('otherPlayerDisconnect', (id) => {
-            this.otherPlayers -= 1;
-            console.log(`User ${id} left.`);
+        this.socket.on('otherPlayerLeave', () => {
+
         });
 
         this.socket.on('otherPlayedCards', (cards, id, playerNumber) => {
@@ -581,5 +596,22 @@ export default class BigTwo extends Phaser.Scene {
                 this.scene.start('Lobby');
             }
         });
+    }
+
+    /**
+     * Sets the username text display for the player
+     * @param {string} username : The username of the player
+     * @param {integer} playerNumber : The player number of the player
+     */
+    setUsernames(username, playerNumber) {
+        console.log(`${username} has joined the room as player ${playerNumber}.`);
+        for (let i = 0; i < this.hands.length; i++) {
+            console.log(this.hands[i].playerNumber + ' User player# ' + playerNumber);
+            if (this.hands[i].playerNumber == playerNumber) {
+                this.usernameTexts[i].setText(username);
+                console.log(`Username set for player ${i + 1}`);
+                break;
+            }
+        }
     }
 }

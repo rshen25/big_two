@@ -236,7 +236,7 @@ export default class Lobby extends Phaser.Scene {
             if (response.status) {
                 console.log(`Joining ${response.room}`);
                 this.room = response.room;
-                this.startBigTwo(room, response.playerNumber);
+                this.startBigTwo(room, response.playerNumber, response.players);
             }
             else {
                 console.log('Failed to join room');
@@ -269,12 +269,13 @@ export default class Lobby extends Phaser.Scene {
      * Starts the Big Two game scene
      * @param {Room} room : The name of the Big Two room
      * @param {integer} playerNumber : The player number of the player when they join the room
+     * @param {Array} usernames : The usernames of players that are already in the room
      */
-    startBigTwo(room, playerNumber) {
+    startBigTwo(room, playerNumber, usernames) {
         console.log('creating room');
         this.scene.start('BigTwo', {
             username: this.username, socket: this.socket,
-            room: room, playerNumber: playerNumber
+            room: room, playerNumber: playerNumber, players: usernames
         });
     }
 

@@ -1,6 +1,13 @@
 const server = require('express')();
 const http = require('http').createServer(server);
-const io = require('socket.io')(http);
+const io = require('socket.io')(http, {
+    cors: {
+        origin: "http://localhost:8080",
+        allowedHeaders: ["my-custom-header"],
+        methods: ["GET", "POST"],
+        credential: true
+    }
+});
 const GameRoom = require('./server/objects/gameRoom.js');
 const Player = require('./server/objects/player.js');
 
@@ -46,7 +53,9 @@ function onConnect(socket) {
     });
 
     // When the client disconnects
-    socket.on('disconnect', onDisconnect);
+    socket.on('disconnect', () => {
+        onDisconnect(username);
+    });
 
     socket.on('logout', () => {
         onLogout(socket);
@@ -81,7 +90,7 @@ function onConnect(socket) {
 function onDisconnect(socket) {
     // remove them from the 
     // Log the user out
-    // io.emit('otherPlayerDisconnect', socket.id);
+    io.emit('otherPlayerDisconnect', socket.id);
     // GameManager.disconnectPlayer(socket.id);
 }
 
@@ -146,16 +155,39 @@ function joinRoom(socket, room) {
         return { status: false, room: undefined };
     }
 
+    // Add the player's socket to the socket room
+    player.setGameRoom(room);
+    // Find the lowest player number that we can assign to the player
+    let players = roomToJoin.getPlayers();
+    for (let i = 1; i < 5; i++) {
+        let matched = false;
+        for (let j = 0; j < players.length; j++) {
+            if (players[j].playerNumber == i) {
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            player.setPlayerNumber(i);
+            break;
+        }
+    }
+
+    let users = [];
+    for (let i = 0; i < players.length; i++) {
+        users.push({ username: players[i].username, playerNumber: players[i].playerNumber });
+    }
+
     if (!roomToJoin.addPlayer(player)) {
         return { status: false, room: undefined };
     }
 
-    // Add the player's socket to the socket room
-    player.setGameRoom(room);
-    player.setPlayerNumber(roomToJoin.getNumberPlayers());
     socket.join(roomToJoin.roomID);
-    io.to(roomToJoin.roomID).emit('onJoinRoom', player);
-    return { status: true, room: roomToJoin.roomID, playerNumber: roomToJoin.getNumberPlayers() };
+    io.to(roomToJoin.roomID).emit('onJoinRoom', player.username, player.playerNumber);
+    return {
+        status: true, room: roomToJoin.roomID, playerNumber: roomToJoin.getNumberPlayers(),
+        players: users
+    };
 }
 
 function onLogout(socket) {
