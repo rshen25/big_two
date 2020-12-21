@@ -13,7 +13,7 @@ router.get('/register', (req, res) => res.render('register'));
 // Register Handle
 router.post('/register', (req, res) => {
     const { name, password, password2 } = req.body;
-
+    let format = /[ `!@#%^&*()+\-=\[\]{};':"\\|,.\/?~]/;
     let errors = [];
 
     /**
@@ -29,6 +29,10 @@ router.post('/register', (req, res) => {
     // Check required fields
     if (!name || !password || !password2) {
         errors.push({ msg: 'Please fill in all fields' });
+    }
+
+    if (format.test(name)) {
+        errors.push({ msg: 'Please do not include special characters like: !@#%^&*\\ in the username' });
     }
 
     // Check if passwords match

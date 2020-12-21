@@ -2,7 +2,7 @@
  * A Card Object to represent a playing card for the client
  */
 
-export default class Card extends Phaser.GameObjects.Image{
+export default class Card extends Phaser.Physics.Arcade.Image {
     constructor(scene, x, y, texture, frame, value, suit, suitValue) {
         super(scene, x, y, texture, frame);
         this.value = value;

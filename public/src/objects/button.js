@@ -69,10 +69,10 @@ export default class Button extends Phaser.GameObjects.Container {
      */
     setVisibility(bool) {
         if (bool) {
-            this.isVisible(true);
+            this.setAll('visible', true);
         }
         else {
-            this.isVisible(false);
+            this.setAll('visible', false);
         }
     }
 

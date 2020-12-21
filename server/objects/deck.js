@@ -18,7 +18,6 @@ module.exports = class Deck {
      * Creates a new Card object and adds it to the deck
      */
     initializeDeck() {
-        console.log('Initializing deck');
         let suits = Object.keys(this.suitRankings);
         for (let i = 0; i < suits.length; i++) {
             let suit = suits[i];
@@ -31,14 +30,12 @@ module.exports = class Deck {
                 }
             }
         }
-        console.log('Deck Initialized');
     }
 
     /**
      * Randomizes the deck by swapping elements within the deck
      */
     shuffle() {
-        console.log('Shuffling deck');
         let j, tmp;
         for (let i = this.deck.length - 1; i > 0; i--) {
             j = Math.floor(Math.random() * (i + 1));
@@ -46,7 +43,6 @@ module.exports = class Deck {
             this.deck[i] = this.deck[j];
             this.deck[j] = tmp;
         }
-        console.log('Deck shuffled');
     }
 
     /**

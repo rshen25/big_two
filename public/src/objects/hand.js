@@ -92,7 +92,6 @@ export default class Hand {
                         continue;
                     }
                     if (this.hand[index].suitValue == card.suitValue) {
-                        console.log(`Found ${card.value}`);
                         return index;
                     }
                 }

@@ -42,6 +42,10 @@ function onConnect(socket) {
         callback(getLobbyData());
     });
 
+    socket.on('requestUserLobbyData', (callback) => {
+        callback(getLobbyUsers());
+    })
+
     // When the client wants to create a room --- TODO: Add to the actual server
     socket.on('createRoom', (username, callback) => {
         callback(createNewRoom(socket, username));
@@ -111,6 +115,22 @@ function getLobbyData() {
             data.push(gameRoom.roomID);
         }
     }
+    return data;
+}
+
+/**
+ * TODO: Add to real server
+ * Returns an array of all the usernames of the users in the lobby
+ * @returns {Array} : An array of all the users in the lobby
+ */
+function getLobbyUsers() {
+    let data = [];
+    if (users.size > 0) {
+        for (let user of users.values()) {
+            data.push(user.username);
+        }
+    }
+    console.log(data);
     return data;
 }
 
@@ -243,8 +263,6 @@ function startGame(room) {
  */
 function cardPlayed(cards, id, playerNumber, room, callback) {
     let gameRoom = getRoom(room);
-    console.log(cards);
-    console.log(`PlayerNumber: ${playerNumber} played`)
     // See if the play is valid
     if (gameRoom.playCards(cards, playerNumber)) {
         // Send the play to all other players
@@ -264,11 +282,9 @@ function cardPlayed(cards, id, playerNumber, room, callback) {
 
         io.to(gameRoom.roomID).emit('otherPlayedCards', cards, id, playerNumber);
         io.to(gameRoom.roomID).emit('nextTurn', gameRoom.getCurrentPlayerTurn(), cards);
-        console.log(`Last Played Turn: ${gameRoom.lastPlayedTurn}`);
     }
     else {
         callback([]);
-        console.log(`Invalid play from ${id}`);
     }
 }
 
@@ -323,5 +339,16 @@ function onLeaveRoom(socket, room) {
         return false;
     }
     client.setGameRoom(undefined);
+
+    let gameRoom = getRoom(room);
+    if (gameRoom.isInProgress) {
+        gameRoom.removePlayer(socket.id);
+    }
+
+    io.to(room).emit('otherPlayerLeave', client.username, client.playerNumber);
+
+    if (gameRoom.getNumberPlayers() <= 0) {
+        rooms.delete(room);
+    }
     return true;
 }

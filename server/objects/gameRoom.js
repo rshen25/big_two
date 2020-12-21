@@ -75,7 +75,7 @@ module.exports = class GameRoom {
             }
         });
         // Generate the remainder of the players
-        for (let i = 1; i < 4; i++) {
+        for (let i = 1; i < this.players.length; i++) {
             firstPlayer++;
             if (firstPlayer % 5 == 0) {
                 firstPlayer = 1;
@@ -141,9 +141,7 @@ module.exports = class GameRoom {
     playPass() {
         this.incrementTurnCount();
         this.currentTurn = this.getCurrentPlayerTurn();
-        console.log(`Last Played Turn Number: ${this.lastPlayedTurn}`);
 
-        console.log(`Current ID's Turn: ${this.currentTurn}`);
         // If every other player passes their turn and it goes back to the last player
         // to play their cards, we reset last played so the player make a new play
         if (this.turnOrder[this.lastPlayedTurn % this.turnOrder.length] == this.currentTurn) {
@@ -252,6 +250,25 @@ module.exports = class GameRoom {
             }
         }
         console.log(this.turnOrder);
+    }
+
+    /**
+     * Removes the player from the game
+     * @param {string} id : The id of the player we are removing from the room
+     */
+    removePlayer(id) {
+        for (let i = 0; i < this.players.length; i++) {
+            if (this.players[i].getPlayerID === id) {
+                this.players.splice(1, i);
+                this.numberOfPlayers--;
+                break;
+            }
+        }
+
+        if (this.isInProgress) {
+            this.removeFromTurnOrder(id);
+        }
+
     }
 
     /**
@@ -434,8 +451,6 @@ module.exports = class GameRoom {
         if (this.turnNumber == 0 &&
             selectedCards[0].value != 3 &&
             selectedCards[0].suitValue != 0) {
-            console.log(selectedCards[0]);
-            console.log('Must include 3 of Spades');
             return false;
         }
 
@@ -446,7 +461,6 @@ module.exports = class GameRoom {
             if (numCards == 1 || this.isPair(selectedCards) || this.isTriple(selectedCards) ||
                 this.isQuads(selectedCards) || this.isStraight(selectedCards) ||
                 this.isBomb(selectedCards)) {
-                console.log('Returned True on new play');
                 return true;
             }
         }

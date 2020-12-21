@@ -58,7 +58,6 @@ export default class BigTwo extends Phaser.Scene {
     }
 
     create() {
-        console.log(this.constructor.name);
         let self = this;
         let width = this.scale.width;
         let height = this.scale.height;
@@ -198,8 +197,8 @@ export default class BigTwo extends Phaser.Scene {
             console.log(`User ${username} left.`);
         });
 
-        this.socket.on('otherPlayerLeave', () => {
-
+        this.socket.on('otherPlayerLeave', (username, playerNumber) => {
+            this.removePlayer(username, playerNumber);
         });
 
         this.socket.on('otherPlayedCards', (cards, id, playerNumber) => {
@@ -215,17 +214,15 @@ export default class BigTwo extends Phaser.Scene {
         // Get the player's hand from the server and add the cards to the hand and 
         // draw them onto the scene 
         this.socket.on('handDealt', (data) => {
-            console.log(self.hand);
-            console.log(data);
             this.isGameStart = true;
             this.toggleLeaveButton();
             let spriteName;
-            let startX = self.hand.x - (self.hand.width / 2) + 30;
+            let startX = self.hand.x - (data.length * 25 / 2);
             for (let i = 0; i < data.length; i++) {
                 spriteName = self.getSpriteNameOfCard(data[i].value, data[i].suit);
 
                 let card = new Card(self,
-                    (startX) + (i * (self.hand.width / (data.length + 1))),
+                    (startX) + (i * 25),
                     self.hand.y,
                     'playingCards',
                     spriteName,
@@ -239,7 +236,6 @@ export default class BigTwo extends Phaser.Scene {
         // Get the other player's hand sizes and draw the cards onto the scene
         this.socket.on('handSizes', (handSizes) => {
             handSizes.splice(self.playerNumber, 1);
-            console.log(`Handsizes: ${handSizes}`);
             let key = 'cardBacks';
             let spriteName = 'cardBack_red1.png';
             if (handSizes.length >= 1) {
@@ -306,7 +302,6 @@ export default class BigTwo extends Phaser.Scene {
      */
     startGame() {
         this.socket.emit('startGame', this.room, (response) => {
-            console.log(response);
             if (response && response === true) {
                 this.dealBtn.disableInteractive();
                 this.dealBtn.setVisible(false);
@@ -339,7 +334,6 @@ export default class BigTwo extends Phaser.Scene {
                 (response) => {
                     this.validPlay(response);
                 });
-            console.log('emited played cards to server');
             // Disable the hand
             this.hand.disableHand();
         }
@@ -357,7 +351,7 @@ export default class BigTwo extends Phaser.Scene {
         if (cards.length != 0) {
             this.hand.findAndRemoveCards(cards);
             this.hand.enableHand();
-        } 
+        }
     }
 
     /**
@@ -417,7 +411,6 @@ export default class BigTwo extends Phaser.Scene {
             this.turn = true;
             // Enable the play and pass buttons
             this.togglePlayPassButtons();
-            console.log('It is your turn!');
         }
     }
 
@@ -427,29 +420,20 @@ export default class BigTwo extends Phaser.Scene {
      */
     validPlay(cards) {
         let cardsToMove = this.hand.getSelectedCards();
-        console.log(cards);
         if (cards === undefined || cards.length == 0) {
             this.hand.enableHand();
         }
         else {
             this.gameRules.setLastPlayed(cards);
             this.gameRules.incrementTurn();
-            console.log('valid play called');
             this.removeCards(cards);
-            console.log('cards found and removed');
 
             // Add the cards to the play area
             this.playArea.addCards(cardsToMove);
             console.log(this.playArea.getLastPlayed());
-            console.log(this.hand.getHand());
 
-/*            // Check if won
-            if (this.checkWinCondition()) {
-                this.socket.emit('hasWon', (response, scores) => {
-                    this.hasWon(response, scores);
-                });
-            }*/
-
+            // Re-size the hand
+            this.refreshHand();
             this.turn = false;
             this.togglePlayPassButtons();
         }
@@ -513,7 +497,6 @@ export default class BigTwo extends Phaser.Scene {
         }
 
         console.log(`${id} played ${cards}`);
-        console.log(`Success, cards removed from ${playerNumber}'s hand`);
     }
 
     /**
@@ -592,6 +575,8 @@ export default class BigTwo extends Phaser.Scene {
     leaveRoom() {
         this.socket.emit('leaveRoom', this.room, (response) => {
             if (response === true) {
+                this.room = undefined;
+                this.playerNumber = 0;
                 // Go back to the lobby
                 this.scene.start('Lobby');
             }
@@ -606,12 +591,36 @@ export default class BigTwo extends Phaser.Scene {
     setUsernames(username, playerNumber) {
         console.log(`${username} has joined the room as player ${playerNumber}.`);
         for (let i = 0; i < this.hands.length; i++) {
-            console.log(this.hands[i].playerNumber + ' User player# ' + playerNumber);
             if (this.hands[i].playerNumber == playerNumber) {
                 this.usernameTexts[i].setText(username);
                 console.log(`Username set for player ${i + 1}`);
                 break;
             }
+        }
+    }
+
+    /**
+     * Removes a player from the game
+     * @param {string} username : The username of the player we are removing
+     * @param {integer} playerNumber : The player number of the player we are removing
+     */
+    removePlayer(username, playerNumber) {
+        // Remove the player from the other player's list
+        for (let i = 0; i < this.otherPlayers.length; i++) {
+            if (this.otherPlayers[i].username == username &&
+                this.otherPlayers[i].playerNumber == playerNumber) {
+                this.otherPlayers.splice(i, 1);
+            }
+        }
+        // Remove the player's username from the game scene
+        this.setUsernames('', playerNumber);
+    }
+
+    refreshHand() {
+        let cards = this.hand.getHand();
+        let startX = this.hand.x - (cards.length * 25 / 2);
+        for (let i = 0; i < cards.length; i++) {
+            cards[i].setX((startX) + (i * 25));
         }
     }
 }
